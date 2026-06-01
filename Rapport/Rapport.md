@@ -1,5 +1,8 @@
 # Rapport
 
+## Test des neurones
+
+### Porte Logique ET
 
 #### Heaviside
 
@@ -42,10 +45,9 @@ Sur 15 essais indépendants, le neurone sigmoïde converge vers une solution uni
   ▎ transforment un problème à solutions multiples en un problème d'optimisation convexe à minimum unique.
 
 
-#### ReLu
+#### ReLU
 
-
-1. ReLU converge ~15× plus vite que Sigmoïde. Pourquoi ? Parce que pour s > 0, la dérivée de ReLU vaut 1 (pas
+  1. ReLU converge ~15× plus vite que Sigmoïde. Pourquoi ? Parce que pour s > 0, la dérivée de ReLU vaut 1 (pas
   σ(s)·(1−σ(s)) qui s'écrase près de 0 ou 1). Le gradient passe "à pleine puissance", l'apprentissage est plus rapide.
 
   2. Solution beaucoup plus "compacte" : poids ~7× plus petits que sigmoïde, biais 11× plus petit. Pourtant elle réalise
@@ -59,3 +61,19 @@ Sur 15 essais indépendants, le neurone sigmoïde converge vers une solution uni
   négative pour toutes les entrées d'entraînement, la sortie est toujours 0, donc delta est constant, mais le gradient
   entree·eta·delta ne suffit pas toujours à sortir de cette zone. Le neurone est "mort". Refais 20 runs et regarde si tu
    as parfois des résultats catastrophiques — bonne expérience pour le rapport.
+
+
+### Porte Logique OU
+
+#### ReLU
+
+#### Heaviside
+
+
+Ça marche, mais c'est une solution dégénérée : presque équivalente à "sortie = x₁". La dépendance à x₂ ne tient qu'au
+  signe d'un nombre minuscule. Si on rajoutait du bruit aux entrées, ce neurone se casserait la figure sur (0,1) — alors
+   que la solution sigmoïde (w₁=w₂=6.64) résisterait beaucoup mieux. C'est précisément ce que va montrer le test au
+  bruit (étape suivante du PDF).
+
+## Normalisation
+
