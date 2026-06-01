@@ -9,3 +9,9 @@
   droite passant entre (1,1) et les 3 autres points) et l'algo prend la première rencontrée à partir de l'init
   aléatoire. Ce que tu peux montrer graphiquement (papier ou matplotlib) en traçant les droites obtenues sur les 20-30
   runs.
+
+Ce qui change avec Sigmoïde
+
+  Avec une sigmoïde, delta ne s'annule jamais complètement → l'apprentissage continue à raffiner les poids vers une
+  solution plus "centrée". Tu devrais y observer des poids plus stables d'un run à l'autre. Bon contraste pour le
+  rapport.
