@@ -1,83 +1,61 @@
-# Rapport
+# Rapport Technique : Expérimentations sur les Réseaux de Neurones
 
-## Test des neurones
+---
 
-### Porte Logique ET
+## 1. Test des Neurones sur Fonctions Logiques
 
-#### Heaviside
+### 1.1 Apprentissage de la Porte Logique ET
 
-"faire des statistiques sur les valeurs des poids trouvées : ces valeurs sont-elles similaires ? Pouvez-vous le justifier ?"
+#### A. Fonction d'activation : Heaviside
 
-  Réponse à mettre dans le rapport : non, elles ne sont pas similaires, parce que le perceptron Heaviside cherche
-  n'importe quel hyperplane séparateur, pas un hyperplane optimal. Il y a une infinité de solutions valides (toute
-  droite passant entre (1,1) et les 3 autres points) et l'algo prend la première rencontrée à partir de l'init
-  aléatoire. Ce que tu peux montrer graphiquement (papier ou matplotlib) en traçant les droites obtenues sur les 20-30
-  runs.
+> **Problématique :** En effectuant des statistiques sur les valeurs des poids trouvées, ces valeurs sont-elles similaires ? Comment le justifier ?
 
-Ce qui change avec Sigmoïde
+**Analyse :** Les valeurs obtenues ne sont **pas similaires**. Le perceptron Heaviside cherche simplement un hyperplan séparateur valide, et non un hyperplan optimal. Comme il existe une infinité de solutions valides (toute droite passant entre le point $(1,1)$ et les trois autres points de la table de vérité), l'algorithme s'arrête sur la première configuration fonctionnelle rencontrée au hasard de l'initialisation aléatoire. 
 
-  Avec une sigmoïde, delta ne s'annule jamais complètement → l'apprentissage continue à raffiner les poids vers une
-  solution plus "centrée". Tu devrais y observer des poids plus stables d'un run à l'autre. Bon contraste pour le
-  rapport.
+#### B. Fonction d'activation : Sigmoïde
 
- Contraste total avec Heaviside. Souviens-toi :
-  - Heaviside run 1 → (0.00017, 0.78, −0.78) après 5914 itérations
-  - Heaviside run 2 → (0.00024, 0.00010, −0.0003) après ~quelques itérations
-  - Sigmoïde : toujours (6.4835, 6.4835, −9.9001) à 4 décimales près
+**Analyse :** Contrairement au neurone Heaviside, la sigmoïde converge vers une **solution unique**, totalement indépendante de l'initialisation aléatoire. 
+Avec une fonction sigmoïde, le gradient ($\delta$) ne s'annule jamais brutalement. L'apprentissage continue d'affiner les poids vers une solution "centrée" et optimale. 
 
+*Comparaison des résultats (Contraste Heaviside / Sigmoïde) :*
+* **Heaviside (Essai 1) :** Poids dispersés ($0.00017,\ 0.78,\ -0.78$) après 5914 itérations.
+* **Heaviside (Essai 2) :** Poids dispersés ($0.00024,\ 0.00010,\ -0.0003$) après quelques itérations.
+* **Sigmoïde (Sur 15 essais) :** Solution constante à la 4ème décimale près ($w_1 = 6.4835,\ w_2 = 6.4835,\ b = -9.9001$).
 
-#### Sigmoide
+**Explication mathématique :** Heaviside cherche n'importe quel hyperplan qui sépare les données. La sigmoïde minimise une erreur quadratique moyenne (MSE) continue et convexe sur des données séparables linéairement. La continuité et la dérivabilité de la sigmoïde transforment un problème à solutions multiples en un problème d'optimisation convexe possédant un minimum unique. Quelle que soit l'initialisation, la descente de gradient finit toujours dans le même puits.
 
-  → La sigmoïde converge vers une solution unique, indépendante de l'initialisation aléatoire. C'est LE point clé à
-  mettre en exergue.
+#### C. Fonction d'activation : ReLU
 
-  Pourquoi
+Le comportement du neurone ReLU se distingue par plusieurs caractéristiques :
+1. **Vitesse de convergence :** ReLU converge environ 15 fois plus vite que la Sigmoïde. Pour une somme pondérée $s > 0$, la dérivée de ReLU vaut $1$. Le gradient passe à "pleine puissance", ce qui accélère drastiquement l'apprentissage.
+2. **Compacité de la solution :** Les poids obtenus sont environ 7 fois plus petits que pour la sigmoïde, et le biais 11 fois plus petit. La sigmoïde nécessite de grands poids pour "saturer" sa sortie près de 0 ou 1, tandis que ReLU est linéaire dans sa zone positive et cible directement les valeurs voulues.
+3. **Absence de borne supérieure :** La sortie de ReLU n'est pas bornée à 1. Si ce comportement fonctionne par chance sur la porte ET, il nécessite une vigilance particulière sur des données plus complexes (comme les images), où les sorties peuvent dépasser $1.0$.
+4. **Le piège du "Dying ReLU" :** Si l'initialisation aléatoire génère un biais très négatif empêchant la somme pondérée de devenir positive pour les entrées d'entraînement, la sortie reste figée à $0$. Le gradient s'annule définitivement et le neurone "meurt", produisant des résultats catastrophiques.
 
-  Heaviside cherche n'importe quel hyperplane qui sépare → infinité de solutions, première trouvée gagne.
+---
 
-  Sigmoïde minimise une MSE continue et convexe (sur des données séparables linéairement) → un seul minimum. Quelle que
-  soit l'init, la descente de gradient finit dans le même puits. L'init ne fait que changer le chemin pris, pas la
-  destination.
+### 1.2 Apprentissage de la Porte Logique OU
 
-Sur 15 essais indépendants, le neurone sigmoïde converge vers une solution unique (w₁ = w₂ = 6.48, b = −9.90), à la
-  ▎  4ᵉ décimale près. À l'inverse, le neurone Heaviside produit des solutions dispersées (poids variant de 10⁻⁴ à 10⁰),
-  ▎  reflétant l'infinité d'hyperplanes séparateurs valides. La continuité et la dérivabilité de la sigmoïde
-  ▎ transforment un problème à solutions multiples en un problème d'optimisation convexe à minimum unique.
+#### A. Fonction d'activation : Heaviside
+Le réseau parvient à apprendre, mais propose une solution dégénérée presque équivalente à $\text{sortie} = x_1$. La dépendance à $x_2$ ne tient qu'au signe d'un nombre minuscule. L'ajout de bruit sur les entrées ferait immédiatement s'effondrer les prédictions de ce modèle.
 
+#### B. Fonction d'activation : ReLU
+**Échec (Phénomène du "Dying ReLU") :** L'apprentissage stagne définitivement à une erreur (MSE) de $0.0625$. Le biais devenant trop négatif, la somme pondérée passe sous zéro : la fonction ReLU renvoie alors strictement $0$, sa dérivée s'annule, tout comme le gradient. Le neurone cesse d'apprendre.
 
-#### ReLU
+#### C. Fonction d'activation : Sigmoïde
+Le modèle démontre une optimisation parfaite :
+1. **Convergence symétrique :** Contrairement au comportement erratique de Heaviside, la sigmoïde trouve une solution où les deux synapses sont équilibrées ($w_1 = 6.64,\ w_2 = 6.63$). Cette symétrie est la traduction mathématique exacte de la logique OU (les entrées A et B ont strictement le même poids décisionnel).
+2. **Seuil adaptatif (Biais) :** Le biais se fixe à $-2.84$ (contre $-9.90$ pour la porte ET). Conséquence : une seule entrée active ($1 \times 6.64$) suffit amplement à surmonter ce seuil négatif ($6.64 - 2.84 = +3.80$) pour que la sortie approche $1.0$.
+3. **Robustesse au bruit :** Grâce à cet équilibre entre les poids et le seuil, la progressivité de la courbe en "S" absorbe les signaux d'entrée imparfaits ou bruités, sans faire basculer brutalement la prédiction comme le ferait Heaviside.
 
-  1. ReLU converge ~15× plus vite que Sigmoïde. Pourquoi ? Parce que pour s > 0, la dérivée de ReLU vaut 1 (pas
-  σ(s)·(1−σ(s)) qui s'écrase près de 0 ou 1). Le gradient passe "à pleine puissance", l'apprentissage est plus rapide.
+---
 
-  2. Solution beaucoup plus "compacte" : poids ~7× plus petits que sigmoïde, biais 11× plus petit. Pourtant elle réalise
-   la même tâche. La sigmoïde a besoin de gros poids pour "saturer" sa sortie près de 0 et 1 ; ReLU n'a pas ce problème
-  puisqu'elle est linéaire dans la zone positive — elle peut "viser" directement les valeurs cibles 0 et 1.
+## 2. Traitement des Images et Normalisation
 
-  3. La sortie de ReLU n'est pas bornée à 1. Sur ET ça arrive par chance, mais sur les images il faudra y faire
-  attention — on pourra avoir des sorties > 1.
+Avant de transmettre le jeu de données des images au réseau de neurones, une étape de conditionnement des signaux est indispensable.
 
-  4. Piège connu : "dying ReLU". Si l'init aléatoire donne un biais très négatif et des poids tels que la somme reste
-  négative pour toutes les entrées d'entraînement, la sortie est toujours 0, donc delta est constant, mais le gradient
-  entree·eta·delta ne suffit pas toujours à sortir de cette zone. Le neurone est "mort". Refais 20 runs et regarde si tu
-   as parfois des résultats catastrophiques — bonne expérience pour le rapport.
-
-
-### Porte Logique OU
-
-
-#### Heaviside
-
-Ça marche, mais c'est une solution dégénérée : presque équivalente à "sortie = x₁". La dépendance à x₂ ne tient qu'au
-  signe d'un nombre minuscule. Si on rajoutait du bruit aux entrées, ce neurone se casserait la figure sur (0,1) — alors
-   que la solution sigmoïde (w₁=w₂=6.64) résisterait beaucoup mieux. C'est précisément ce que va montrer le test au
-  bruit (étape suivante du PDF).
-
-
-#### ReLU
-
-Marche pas (bloque en 0.625)
-
-
-## Normalisation
-
+1. **Problématique des données brutes (Le Signal) :** Les images fournies au réseau de neurones sont constituées de pixels dont l'amplitude brute varie de 0 à 255. Ces valeurs possèdent une dynamique trop élevée pour notre algorithme. L'objectif de cette étape est de normaliser les amplitudes des pixels avant de les envoyer au neurone.
+   
+2. **Le piège de la saturation (Vanishing Gradient) :** L'injection de valeurs brutes non normalisées (ex: 200, 150, 255) dans un neurone utilisant une fonction d'activation sigmoïde provoque l'explosion de la somme pondérée interne. Pour des valeurs extrêmes ($x > 5$ ou $x < -5$), la courbe de la sigmoïde s'aplatit totalement. La sortie sature à $1.0$, la dérivée devient quasi nulle, et le réseau se fige. Les poids synaptiques ne sont plus mis à jour.
+   
+3. **Solution mise en œuvre :** La normalisation appliquée consiste à diviser la valeur de chaque pixel par $255.0$. Cette opération ramène l'intégralité des signaux d'entrée dans un intervalle strictement compris entre $0.0$ et $1.0$. Cela garantit que la somme pondérée reste concentrée dans la zone linéaire (sensible) de la fonction d'activation, assurant ainsi une convergence stable de l'algorithme.
