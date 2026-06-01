@@ -112,9 +112,9 @@ public class ChaineTraitImage
         System.out.printf("Baseline (classifieur trivial 'tout autre') : %.2f %%%n", baseline);
         System.out.println("===========================================");
 
-        
+
         // Interface UI
 
-
+        UserInterface.start(cheminsTest, n);
     }
 }
