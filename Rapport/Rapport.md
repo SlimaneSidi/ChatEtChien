@@ -79,5 +79,15 @@ Sur 15 essais indépendants, le neurone sigmoïde converge vers une solution uni
 Marche pas (bloque en 0.625)
 
 
+#### Sigmoide
+1. Convergence symétrique parfaite : Contrairement au comportement erratique de Heaviside, la sigmoïde trouve une solution où les deux synapses sont équilibrées (w₁ = 6.64, w₂ = 6.63). Cette symétrie est la traduction mathématique exacte de la logique OU (les entrées A et B ont strictement le même poids décisionnel).
+  
+  2. Analyse du Biais (Contraste ET / OU) : Le biais calculé est de -2.84, ce qui est une différence majeure par rapport au biais de -9.90 obtenu pour la porte ET. L'explication est purement logique : pour une porte OU, il suffit qu'une seule entrée soit active (soit 1 * 6.64 = 6.64) pour surpasser le biais (6.64 - 2.84 = +3.80). La somme interne devient alors suffisamment positive pour pousser la sortie de la sigmoïde proche de 1 (0.97). Pour la porte ET, le biais très profond nécessitait absolument l'addition des deux entrées pour passer dans le positif.
+  
+  3. Comportement face aux signaux imparfaits : Grâce à cet équilibre entre les poids et le seuil (biais), la sigmoïde se montre extrêmement robuste face au bruit. Une entrée bruitée ne déclenche pas de changement d'état brutal, contrairement à l'effet "tout-ou-rien" de Heaviside.
+
+
 ## Normalisation
+
+ 
 
