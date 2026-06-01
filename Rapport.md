@@ -43,3 +43,19 @@ Sur 15 essais indépendants, le neurone sigmoïde converge vers une solution uni
 
 
 #### ReLu
+
+
+1. ReLU converge ~15× plus vite que Sigmoïde. Pourquoi ? Parce que pour s > 0, la dérivée de ReLU vaut 1 (pas
+  σ(s)·(1−σ(s)) qui s'écrase près de 0 ou 1). Le gradient passe "à pleine puissance", l'apprentissage est plus rapide.
+
+  2. Solution beaucoup plus "compacte" : poids ~7× plus petits que sigmoïde, biais 11× plus petit. Pourtant elle réalise
+   la même tâche. La sigmoïde a besoin de gros poids pour "saturer" sa sortie près de 0 et 1 ; ReLU n'a pas ce problème
+  puisqu'elle est linéaire dans la zone positive — elle peut "viser" directement les valeurs cibles 0 et 1.
+
+  3. La sortie de ReLU n'est pas bornée à 1. Sur ET ça arrive par chance, mais sur les images il faudra y faire
+  attention — on pourra avoir des sorties > 1.
+
+  4. Piège connu : "dying ReLU". Si l'init aléatoire donne un biais très négatif et des poids tels que la somme reste
+  négative pour toutes les entrées d'entraînement, la sortie est toujours 0, donc delta est constant, mais le gradient
+  entree·eta·delta ne suffit pas toujours à sortir de cette zone. Le neurone est "mort". Refais 20 runs et regarde si tu
+   as parfois des résultats catastrophiques — bonne expérience pour le rapport.
