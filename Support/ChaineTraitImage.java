@@ -14,7 +14,7 @@ public class ChaineTraitImage
     static final String DIR_TRAIN = "../dataset_groupe_9/train";
     static final String DIR_TEST  = "../dataset_groupe_9/test";
     static final float ETA        = 0.001f;
-    static final float MSE_LIMITE = 0.15f;
+    static final float MSE_LIMITE = 0.1f;
     static final float SEUIL_DECISION = 0.5f;
     static final long  SEED       = 42L;
 
