@@ -65,15 +65,19 @@ Sur 15 essais indépendants, le neurone sigmoïde converge vers une solution uni
 
 ### Porte Logique OU
 
-#### ReLU
 
 #### Heaviside
-
 
 Ça marche, mais c'est une solution dégénérée : presque équivalente à "sortie = x₁". La dépendance à x₂ ne tient qu'au
   signe d'un nombre minuscule. Si on rajoutait du bruit aux entrées, ce neurone se casserait la figure sur (0,1) — alors
    que la solution sigmoïde (w₁=w₂=6.64) résisterait beaucoup mieux. C'est précisément ce que va montrer le test au
   bruit (étape suivante du PDF).
+
+
+#### ReLU
+
+Marche pas (bloque en 0.625)
+
 
 ## Normalisation
 
