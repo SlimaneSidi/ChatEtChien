@@ -2,7 +2,6 @@
 
 ![Java](https://img.shields.io/badge/Java-ED8B00?style=for-the-badge&logo=java&logoColor=white)
 ![ISEN](https://img.shields.io/badge/ISEN-Méditerranée-red?style=for-the-badge)
-![Machine Learning](https://img.shields.io/badge/Machine_Learning-From_Scratch-blue?style=for-the-badge)
 
 **Équipe Projet (Groupe 9) :**
 * Icham OULALI
