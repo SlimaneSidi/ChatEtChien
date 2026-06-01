@@ -10,7 +10,7 @@ import java.util.*;
 
 public class ChaineTraitImage
 {
-    static final boolean NIVEAUX_DE_GRIS = true;
+    static final boolean NIVEAUX_DE_GRIS = false;
     static final String DIR_TRAIN = "../dataset_groupe_9/train";
     static final String DIR_TEST  = "../dataset_groupe_9/test";
     static final float ETA        = 0.001f;
