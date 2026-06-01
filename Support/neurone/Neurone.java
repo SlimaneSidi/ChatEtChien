@@ -7,7 +7,7 @@ public abstract class Neurone implements iNeurone
 {
 	// Coefficient de mise à jour des poids,
 	// commun (static) à tous les neurones
-	private static float eta = 0.0001f;
+	private static float eta = 0.001f; // 0.0001
 	// Accesseur en écriture seule, permettant de modifier
 	// eta pour tous les neurones pendant l'exécution
 	public static void fixeCoefApprentissage(final float nouvelEta) {eta = nouvelEta;}
