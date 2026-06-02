@@ -25,6 +25,22 @@ public class Image
 
 	public boolean estEnNiveauxDeGris() {return taille() == largeur() * hauteur();}
 
+	// Renvoie une copie des donnees miroitee horizontalement (symetrie gauche-droite).
+	// Fonctionne en niveaux de gris (1 canal) comme en couleur (3 canaux).
+	public int[] donneesMiroirHorizontal() {
+		final int canaux = estEnNiveauxDeGris() ? 1 : 3;
+		int[] miroir = new int[donnees.length];
+		for (int i = 0; i < hauteur; ++i) {
+			for (int j = 0; j < largeur; ++j) {
+				final int src = i * largeur + j;
+				final int dst = i * largeur + (largeur - 1 - j);
+				for (int c = 0; c < canaux; ++c)
+					miroir[canaux * dst + c] = donnees[canaux * src + c];
+			}
+		}
+		return miroir;
+	}
+
 	public void afficheMetadonnees() {
 		String type = estEnNiveauxDeGris() ? "grayscale" : " couleurs";
 		System.out.printf("Image (%s): label=%d, largeur=%d, hauteur=%d, taille=%d\n",

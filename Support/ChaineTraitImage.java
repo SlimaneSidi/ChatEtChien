@@ -11,6 +11,9 @@ import java.util.*;
 public class ChaineTraitImage
 {
     static final boolean NIVEAUX_DE_GRIS = false;
+    // Augmentation de donnees : ajoute le miroir horizontal de chaque image de train
+    // (uniquement le train, jamais le test). Double la taille du jeu d'apprentissage.
+    static final boolean MIROIR_HORIZONTAL = true;
     static final String DIR_TRAIN = "../dataset_groupe_9/train";
     static final String DIR_TEST  = "../dataset_groupe_9/test";
     static final float ETA        = 0.001f;
@@ -44,28 +47,36 @@ public class ChaineTraitImage
         Collections.shuffle(cheminsTrain, new Random(SEED));
 
         final int N = cheminsTrain.size();
-        float[][] entreesTrain = new float[N][];
-        float[]   ciblesTrain  = new float[N];
+        // Avec le miroir horizontal, chaque image genere 2 exemples (originale + miroir)
+        final int facteur = MIROIR_HORIZONTAL ? 2 : 1;
+        final int M = N * facteur;
+        float[][] entreesTrain = new float[M][];
+        float[]   ciblesTrain  = new float[M];
         int nbChat = 0;
+        int idx = 0;
         long t0 = System.currentTimeMillis();
         for (int i = 0; i < N; ++i) {
             int lbl = labelChat(cheminsTrain.get(i));
             Image im = new Image(cheminsTrain.get(i), lbl, NIVEAUX_DE_GRIS);
-            entreesTrain[i] = normalise(im.donnees());
-            ciblesTrain[i]  = lbl;
-            if (lbl == 1) ++nbChat;
+            entreesTrain[idx]  = normalise(im.donnees());
+            ciblesTrain[idx++] = lbl;
+            if (MIROIR_HORIZONTAL) {
+                entreesTrain[idx]  = normalise(im.donneesMiroirHorizontal());
+                ciblesTrain[idx++] = lbl;
+            }
+            if (lbl == 1) nbChat += facteur;
             if ((i+1) % 1000 == 0)
                 System.out.printf("    %d / %d images chargees%n", i+1, N);
         }
 
         long dt = System.currentTimeMillis() - t0;
-        System.out.printf("    %d images chargees en %.1f s (%d chats, %d non-chats)%n",
-                          N, dt/1000.0, nbChat, N-nbChat);
+        System.out.printf("    %d exemples (%d images x%d) charges en %.1f s (%d chats, %d non-chats)%n",
+                          M, N, facteur, dt/1000.0, nbChat, M-nbChat);
 
         // Creation du neurone
         final int tailleEntree = entreesTrain[0].length;
         System.out.println("[2/4] Creation du neurone sigmoide");
-        System.out.printf("    %d entrees (= %dx%d pixels)%n",
+        System.out.printf("    %d entrees (= %dx%dx3 pixels)%n", // enlever le x3 si en niveaux de gris
                           tailleEntree, 64, 64);
         Neurone.fixeCoefApprentissage(ETA);
         iNeurone n = new NeuroneSigmoide(tailleEntree);
@@ -112,9 +123,10 @@ public class ChaineTraitImage
         System.out.println("===========================================");
 
         // Journalisation des resultats (ajout en fin de Rapport/Results.md, sans ecraser)
-        String type = NIVEAUX_DE_GRIS ? "NiveauDeGris" : "RGB";
+        String type = (NIVEAUX_DE_GRIS ? "NiveauDeGris" : "RGB")
+                    + (MIROIR_HORIZONTAL ? "+miroir" : "");
         String neurone = n.getClass().getSimpleName();
-        enregistreResultats(type, neurone, N, nbIterations, ETA, MSE_LIMITE,
+        enregistreResultats(type, neurone, M, nbIterations, ETA, MSE_LIMITE,
                             accuracy, precision, rappel);
 
 
