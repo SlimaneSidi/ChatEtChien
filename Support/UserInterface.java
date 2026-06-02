@@ -10,15 +10,15 @@ public class UserInterface extends JFrame {
     private JButton boutonSuivant;
 
     private List<String> listeChemins;
-    private iNeurone neuroneEntraine;
+    private iNeurone[] neurones;
     private Random rand;
 
-    public UserInterface(List<String> chemins, iNeurone neurone) {
+    public UserInterface(List<String> chemins, iNeurone[] neurones) {
         this.listeChemins = chemins;
-        this.neuroneEntraine = neurone;
+        this.neurones = neurones;
         this.rand = new Random();
 
-        setTitle("Détecteur de Chats - ISEN Groupe 9");
+        setTitle("Détecteur Chat / Chien / Wild - ISEN Groupe 9");
         setSize(450, 550);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLocationRelativeTo(null);
@@ -53,30 +53,29 @@ public class UserInterface extends JFrame {
         java.awt.Image imgRedimensionnee = icone.getImage().getScaledInstance(350, 350, java.awt.Image.SCALE_SMOOTH);
         labelImage.setIcon(new ImageIcon(imgRedimensionnee));
 
-        // Détermination du vrai label pour vérification visuelle humaine
-        int vraiLabel = ChaineTraitImage.labelChat(cheminAleatoire);
-        String labelReelTexte = (vraiLabel == 1) ? "Chat" : "Autre";
+        // Détermination de la vraie classe pour vérification visuelle humaine
+        int classeReelle = ChaineTraitImage.classeReelle(cheminAleatoire);
+        String reelTexte = ChaineTraitImage.CLASSES[classeReelle];
 
-        // Traitement du signal par le neurone
-        Image imageJava = new Image(cheminAleatoire, vraiLabel, false);
+        // Traitement du signal : classe predite = argmax des 3 neurones
+        Image imageJava = new Image(cheminAleatoire, classeReelle, false);
         float[] entreesNormalisees = ChaineTraitImage.normalise(imageJava.donnees());
 
-        neuroneEntraine.metAJour(entreesNormalisees);
-        float score = neuroneEntraine.sortie();
+        int predit = ChaineTraitImage.predictionClasse(neurones, entreesNormalisees);
+        neurones[predit].metAJour(entreesNormalisees); // recupere le score du neurone gagnant
+        float score = neurones[predit].sortie();
+        String preditTexte = ChaineTraitImage.CLASSES[predit];
 
-        // Verdict final par seuillage
-        if (score >= 0.5f) {
-            labelVerdict.setText(" CHAT ! (Score: " + String.format("%.2f", score) + " | Réel: " + labelReelTexte + ")");
-            labelVerdict.setForeground(new Color(34, 139, 34)); // Vert
-        } else {
-            labelVerdict.setText(" NON CHAT (Score: " + String.format("%.2f", score) + " | Réel: " + labelReelTexte + ")");
-            labelVerdict.setForeground(Color.RED);
-        }
+        // Verdict : vert si la prediction est correcte, rouge sinon
+        boolean correct = (predit == classeReelle);
+        labelVerdict.setText(preditTexte.toUpperCase()
+            + " (score " + String.format("%.2f", score) + " | reel: " + reelTexte + ")");
+        labelVerdict.setForeground(correct ? new Color(34, 139, 34) : Color.RED);
     }
 
-    public static void start(List<String> cheminsTest, iNeurone neurone) {
+    public static void start(List<String> cheminsTest, iNeurone[] neurones) {
         SwingUtilities.invokeLater(() -> {
-            UserInterface app = new UserInterface(cheminsTest, neurone);
+            UserInterface app = new UserInterface(cheminsTest, neurones);
             app.setVisible(true);
         });
     }
