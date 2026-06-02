@@ -10,11 +10,15 @@ import java.util.*;
 
 public class ChaineTraitImage
 {
-    static final boolean NIVEAUX_DE_GRIS = false;
+    // Representation des entrees du neurone : "GRIS", "RGB" ou "FFT"
+    // (FFT = spectre log-magnitude calcule sur l'image en niveaux de gris)
+    static final String REPRESENTATION = "FFT";
+    // FFT et GRIS travaillent sur une image en niveaux de gris ; seul RGB charge la couleur
+    static final boolean CHARGE_EN_GRIS = !REPRESENTATION.equals("RGB");
     static final String DIR_TRAIN = "../dataset_groupe_9/train";
     static final String DIR_TEST  = "../dataset_groupe_9/test";
     static final float ETA        = 0.001f;
-    static final float MSE_LIMITE = 0.01f;
+    static final float MSE_LIMITE = 0.11f;
     static final float SEUIL_DECISION = 0.5f;
     static final long  SEED       = 42L;
 
@@ -29,6 +33,15 @@ public class ChaineTraitImage
         for (int i = 0; i < donnees.length; ++i)
             f[i] = donnees[i] / 255.0f;
         return f;
+    }
+
+    // Construit le vecteur d'entree du neurone selon REPRESENTATION.
+    // GRIS / RGB : pixels normalises ; FFT : spectre log-magnitude de l'image en gris.
+    static float[] extraitEntree(Image im) {
+        float[] norm = normalise(im.donnees());
+        if (REPRESENTATION.equals("FFT"))
+            return FFT.spectreLogMagnitude(norm, im.largeur(), im.hauteur());
+        return norm;
     }
 
     public static void main(String[] args)
@@ -50,8 +63,8 @@ public class ChaineTraitImage
         long t0 = System.currentTimeMillis();
         for (int i = 0; i < N; ++i) {
             int lbl = labelChat(cheminsTrain.get(i));
-            Image im = new Image(cheminsTrain.get(i), lbl, NIVEAUX_DE_GRIS);
-            entreesTrain[i] = normalise(im.donnees());
+            Image im = new Image(cheminsTrain.get(i), lbl, CHARGE_EN_GRIS);
+            entreesTrain[i] = extraitEntree(im);
             ciblesTrain[i]  = lbl;
             if (lbl == 1) ++nbChat;
             if ((i+1) % 1000 == 0)
@@ -84,8 +97,8 @@ public class ChaineTraitImage
         int vp = 0, vn = 0, fp = 0, fn = 0; // vrai positif, vrai negatif, faux positif, faux negatif (positif = predit chat, negatif = predit autre)
         for (String chemin : cheminsTest) {
             int vraiLbl = labelChat(chemin);
-            Image im = new Image(chemin, vraiLbl, NIVEAUX_DE_GRIS);
-            float[] e = normalise(im.donnees());
+            Image im = new Image(chemin, vraiLbl, CHARGE_EN_GRIS);
+            float[] e = extraitEntree(im);
             n.metAJour(e);
             int predit = n.sortie() >= SEUIL_DECISION ? 1 : 0;
             if      (vraiLbl == 1 && predit == 1) ++vp;
@@ -112,7 +125,7 @@ public class ChaineTraitImage
         System.out.println("===========================================");
 
         // Journalisation des resultats (ajout en fin de Rapport/Results.md, sans ecraser)
-        String type = NIVEAUX_DE_GRIS ? "NiveauDeGris" : "RGB";
+        String type = REPRESENTATION;
         String neurone = n.getClass().getSimpleName();
         enregistreResultats(type, neurone, N, nbIterations, ETA, MSE_LIMITE,
                             accuracy, precision, rappel);
@@ -123,10 +136,7 @@ public class ChaineTraitImage
         UserInterface.start(cheminsTest, n);
     }
 
-    // Ajoute une ligne de resultats a Rapport/Results.md.
-    // Cree le fichier (et l'entete du tableau) s'il n'existe pas ou est vide,
-    // sinon ajoute simplement une ligne sans effacer le contenu existant.
-    // L'id est auto-incremente a partir du plus grand id deja present.
+    // Print les resultats sur Results.md
     static void enregistreResultats(String type, String neurone, int nbImagesTrain,
                                     int iterations, float eta, float mseLimite,
                                     double accuracy, double precision, double rappel) {
@@ -158,7 +168,7 @@ public class ChaineTraitImage
             try (java.io.FileWriter w = new java.io.FileWriter(f, true)) { // true = ajout
                 if (!entetePresente) w.write(entete);
                 String date = java.time.LocalDateTime.now()
-                    .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                    .format(java.time.format.DateTimeFormatter.ofPattern("dd-MM-yyyy HH:mm:ss"));
                 w.write(String.format(java.util.Locale.US,
                     "| %d | %s | %s | %s | %d | %d | %.4f | %.3f | %.2f | %.2f | %.2f |%n",
                     prochainId, date, type, neurone, nbImagesTrain, iterations,
