@@ -58,9 +58,8 @@ public class UserInterface extends JFrame {
         String labelReelTexte = (vraiLabel == 1) ? "Chat" : "Autre";
 
         // Traitement du signal par le neurone
-        Image imageJava = new Image(cheminAleatoire, vraiLabel, true);
-        float[] entreesNormalisees = ChaineTraitImage.normalise(imageJava.donnees());
-
+        Image imageJava = new Image(cheminAleatoire, vraiLabel, false);
+        float[] entreesNormalisees = ChaineTraitImage.pretraiter(imageJava.donnees());
         neuroneEntraine.metAJour(entreesNormalisees);
         float score = neuroneEntraine.sortie();
 

@@ -59,3 +59,110 @@ Avant de transmettre le jeu de données des images au réseau de neurones, une �
 2. **Le piège de la saturation (Vanishing Gradient) :** L'injection de valeurs brutes non normalisées (ex: 200, 150, 255) dans un neurone utilisant une fonction d'activation sigmoïde provoque l'explosion de la somme pondérée interne. Pour des valeurs extrêmes ($x > 5$ ou $x < -5$), la courbe de la sigmoïde s'aplatit totalement. La sortie sature à $1.0$, la dérivée devient quasi nulle, et le réseau se fige. Les poids synaptiques ne sont plus mis à jour.
    
 3. **Solution mise en œuvre :** La normalisation appliquée consiste à diviser la valeur de chaque pixel par $255.0$. Cette opération ramène l'intégralité des signaux d'entrée dans un intervalle strictement compris entre $0.0$ et $1.0$. Cela garantit que la somme pondérée reste concentrée dans la zone linéaire (sensible) de la fonction d'activation, assurant ainsi une convergence stable de l'algorithme.
+
+
+
+# RGB
+
+64.94 %. Qu'estce qui pourrait causer ça ? Que faudrait il ameliorer pour avoir
+  une meilleure précision de choix ?
+
+● C'est en fait un résultat normal — tu butes contre la limite d'expressivité d'un perceptron simple. Quelques constats avant les
+  pistes.
+
+  Observations sur tes 2 runs
+
+| MSE limite | Itérations | Temps | Accuracy test |
+| :--- | :--- | :--- | :--- |
+| 0.10 | 255 | 15 s | 77.28 % |
+| 0.07 | 9166 | 561 s | 75.66 % ↓ |
+
+  Plus tu pousses l'apprentissage, moins ton accuracy de test est bonne → c'est le signal classique du surapprentissage
+  (overfitting). Le neurone mémorise des particularités du train qui ne se généralisent pas. Tu peux le mentionner dans le rapport,
+   c'est un point scientifique très solide.
+
+  Pourquoi on plafonne à ~77 %
+
+  Un seul neurone = un seul hyperplan dans l'espace des pixels (4096 dimensions). Or "être un chat" n'est pas une fonction linéaire
+   des valeurs de pixels :
+
+  1. Invariance à la position : un chat à gauche et un chat à droite ont des vecteurs d'entrée complètement différents. Le neurone
+  ne peut pas "savoir" que c'est le même objet déplacé.
+  2. Invariance d'apparence : pose, race, fond, éclairage → tout change les valeurs des pixels alors que sémantiquement c'est
+  toujours un chat.
+  3. Grayscale jette la couleur : information utile pour distinguer chat / chien / wild.
+  4. Pixel brut = mauvaise feature : la valeur du pixel (12, 30) n'a aucun sens conceptuel.
+
+  Donc 77 % avec un neurone linéaire sur pixels bruts c'est en fait déjà honorable (12 points au-dessus de la baseline 65 %).
+
+  Pistes d'amélioration (du plus simple au plus ambitieux)
+
+  Toutes celles-ci sont dans le sujet (page 5 "Extensions") :
+
+  1. Mieux normaliser — standardisation
+
+  Au lieu de juste ÷255, soustrais la moyenne et divise par l'écart-type sur tout le dataset :
+  pixel' = (pixel - moyenne_globale) / ecartType_global
+  Ça centre les entrées autour de 0, ce qui aide énormément la descente de gradient à converger sur un meilleur optimum.
+
+  2. Passer en RGB
+
+  Tes neurones ont 4096 entrées en gris. En RGB tu en aurais 12 288 (3×4096). Plus de paramètres = plus de capacité à séparer, et
+  tu gardes l'info couleur (très utile : les wild ont souvent des couleurs distinctes).
+
+  3. Passer en TSL (HSV)
+
+  Encore mieux que RGB pour la séparation animale : la teinte (H) est invariante à la luminosité, donc plus robuste aux variations
+  d'éclairage.
+
+  4. Égalisation d'histogramme
+
+  Avant normalisation, redistribue les niveaux de gris pour saturer l'usage de la dynamique [0, 255]. Marche bien sur des photos de
+   luminosité variable.
+
+  5. Augmentation de données (miroir horizontal)
+
+  Pour chaque image de train, ajoute aussi sa version miroir avec le même label. Tu doubles le jeu de train et tu apprends une
+  légère invariance à la symétrie gauche/droite. Ça aide vraiment contre le surapprentissage que tu observes.
+
+  6. FFT 2D
+
+  Mentionnée explicitement dans le sujet ("technique surtout 1D"). Le module de la FFT 2D est invariant à la translation dans
+  l'image. Donc un chat décalé donnerait le même spectre. Tu remplaces tes 4096 pixels par les 4096 modules FFT en entrée du
+  neurone. À tester — peut donner un gain significatif.
+
+  7. Early stopping (anti-overfitting)
+
+  Garde de côté ~1000 images du train comme "validation". Mesure l'accuracy sur cette validation toutes les N itérations.
+  Arrête-toi quand elle commence à baisser (même si la MSE train continue à descendre). C'est la méthode standard contre
+  l'overfitting.
+
+  Recommandation pour le temps qui reste
+
+  Vu que tu rends demain matin, je suggérerais cet ordre :
+  1. (rapide, gros effet) Standardisation au lieu de simple ÷255 → re-mesure
+  2. (rapide, moyen effet) Augmentation miroir → re-mesure
+  3. (moyen, gros effet) Passer en RGB → re-mesure
+  4. (intéressant pour rapport) Tester sans mélange, sans normalisation → montrer la dégradation
+
+  Chaque variante = une ligne dans un tableau comparatif qui fera très bonne impression dans le rapport :
+
+| Variante | Accuracy test |
+| :--- | :--- |
+| Baseline (toujours "autre") | 65 % |
+| Sigmoïde, gris, ÷255 (actuel) | 77 % |
+| + standardisation | ? |
+| + miroir | ? |
+| + RGB | ? |
+| Sans normalisation | ? |
+| Sans mélange | ? |
+
+  ### Tableau Comparatif - Normalisation VS Histogramme 
+
+| Métrique | Égalisation d'Histogramme | Normalisation |
+| :--- | :--- | :--- |
+| **Accuracy (Précision globale)** | **76,72 %** (Vainqueur) | 72,47 % |
+| **Temps d'apprentissage** | 11,6 s | **7,6 s** (Vainqueur) |
+| **Itérations (Vitesse de convergence)** | 139 | **89** (Vainqueur) |
+| **Vrais positifs (Chats correctement identifiés)** | 663 | **749** |
+| **Faux positifs (Erreurs de prédiction "Chat")**| **286** (Vainqueur : moins d'erreurs) | 508 |
