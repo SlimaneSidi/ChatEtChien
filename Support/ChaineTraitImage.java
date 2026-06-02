@@ -15,8 +15,8 @@ public class ChaineTraitImage
     static final String DIR_TEST  = "../dataset_groupe_9/test";
     static final float ETA        = 0.001f;
     static final float MSE_LIMITE = 0.01f;
-    static final float SEUIL_DECISION = 0.5f;
-    static final long  SEED       = 42L;
+    static final float SEUIL_DECISION = 0.7f;
+    static final long  SEED       = 67L;
 
     // Determine le label binaire d'une image a partir de son chemin (chat = 1, sinon = 0)
     static int labelChat(String chemin) {
@@ -80,7 +80,7 @@ public class ChaineTraitImage
 
         // Evaluation sur le jeu de test
         System.out.println("[4/4] Evaluation sur la base de donnée...");
-        List<String> cheminsTest = Image.listeFichiers(DIR_TRAIN);
+        List<String> cheminsTest = Image.listeFichiers(DIR_TEST);
         int vp = 0, vn = 0, fp = 0, fn = 0; // vrai positif, vrai negatif, faux positif, faux negatif (positif = predit chat, negatif = predit autre)
         for (String chemin : cheminsTest) {
             int vraiLbl = labelChat(chemin);
