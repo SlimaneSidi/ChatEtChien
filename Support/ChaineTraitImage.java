@@ -14,7 +14,7 @@ public class ChaineTraitImage
     static final String DIR_TRAIN = "../dataset_groupe_9/train";
     static final String DIR_TEST  = "../dataset_groupe_9/test";
     static final float ETA        = 0.001f;
-    static final float MSE_LIMITE = 0.01f;
+    static final float MSE_LIMITE = 0.1f;
     static final float SEUIL_DECISION = 0.7f;
     static final long  SEED       = 67L;
 
@@ -31,6 +31,23 @@ public class ChaineTraitImage
         return f;
     }
 
+    // Renvoie une copie miroir horizontal (gauche-droite) d'une image applatie ligne par ligne.
+    // Inverse la colonne j -> largeur-1-j en conservant l'ordre des canaux.
+    // canaux = 1 en niveaux de gris, 3 en RGB.
+    static float[] miroirHorizontal(float[] src, int largeur, int hauteur, boolean niveauxDeGris) {
+        final int canaux = niveauxDeGris ? 1 : 3;
+        float[] dst = new float[src.length];
+        for (int i = 0; i < hauteur; ++i) {
+            for (int j = 0; j < largeur; ++j) {
+                final int idxSrc = (i * largeur + j)               * canaux;
+                final int idxDst = (i * largeur + (largeur-1 - j))  * canaux;
+                for (int c = 0; c < canaux; ++c)
+                    dst[idxDst + c] = src[idxSrc + c];
+            }
+        }
+        return dst;
+    }
+
     public static void main(String[] args)
     {
         System.out.println("[1/4] Chargement de la base de donnees...");
@@ -44,23 +61,28 @@ public class ChaineTraitImage
         Collections.shuffle(cheminsTrain, new Random(SEED));
 
         final int N = cheminsTrain.size();
-        float[][] entreesTrain = new float[N][];
-        float[]   ciblesTrain  = new float[N];
+        final int M = 2 * N; // augmentation : chaque image + son miroir horizontal
+        float[][] entreesTrain = new float[M][];
+        float[]   ciblesTrain  = new float[M];
         int nbChat = 0;
         long t0 = System.currentTimeMillis();
         for (int i = 0; i < N; ++i) {
             int lbl = labelChat(cheminsTrain.get(i));
             Image im = new Image(cheminsTrain.get(i), lbl, NIVEAUX_DE_GRIS);
-            entreesTrain[i] = normalise(im.donnees());
-            ciblesTrain[i]  = lbl;
-            if (lbl == 1) ++nbChat;
+            float[] e = normalise(im.donnees());
+            entreesTrain[i]   = e;
+            ciblesTrain[i]    = lbl;
+            // Image miroir horizontal (meme label) ajoutee en seconde moitie du tableau
+            entreesTrain[N+i] = miroirHorizontal(e, im.largeur(), im.hauteur(), NIVEAUX_DE_GRIS);
+            ciblesTrain[N+i]  = lbl;
+            if (lbl == 1) nbChat += 2;
             if ((i+1) % 1000 == 0)
                 System.out.printf("    %d / %d images chargees%n", i+1, N);
         }
 
         long dt = System.currentTimeMillis() - t0;
-        System.out.printf("    %d images chargees en %.1f s (%d chats, %d non-chats)%n",
-                          N, dt/1000.0, nbChat, N-nbChat);
+        System.out.printf("    %d images chargees (%d originales + %d miroirs) en %.1f s (%d chats, %d non-chats)%n",
+                          M, N, N, dt/1000.0, nbChat, M-nbChat);
 
         // Creation du neurone
         final int tailleEntree = entreesTrain[0].length;
@@ -114,7 +136,7 @@ public class ChaineTraitImage
         // Journalisation des resultats (ajout en fin de Rapport/Results.md, sans ecraser)
         String type = NIVEAUX_DE_GRIS ? "NiveauDeGris" : "RGB";
         String neurone = n.getClass().getSimpleName();
-        enregistreResultats(type, neurone, N, nbIterations, ETA, MSE_LIMITE,
+        enregistreResultats(type, neurone, M, nbIterations, ETA, MSE_LIMITE,
                             accuracy, precision, rappel);
 
 
