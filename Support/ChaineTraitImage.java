@@ -1,78 +1,141 @@
 import java.util.*;
 
-// Neurone choisi : sigmoide.
-// Chaine de traitement complete : lecture des images, normalisation,
-// melange, apprentissage avec un neurone.
-// Label : 1 = chat, 0 = autre (chien ou wild).
-//
-// javac neurone/*.java *.java
-// java -cp .;neurone ChaineTraitImage
-
 public class ChaineTraitImage
 {
-    static final boolean NIVEAUX_DE_GRIS = false;
-    static final String DIR_TRAIN = "../dataset_groupe_9/train";
-    static final String DIR_TEST  = "../dataset_groupe_9/test";
+    static final boolean NIVEAUX_DE_GRIS = true; 
+    static final String DIR_TRAIN = "../dataset_Groupe_9/train";
+    static final String DIR_TEST  = "../dataset_Groupe_9/test";
     static final float ETA        = 0.001f;
     static final float MSE_LIMITE = 0.1f;
     static final float SEUIL_DECISION = 0.5f;
     static final long  SEED       = 42L;
 
-    // Determine le label binaire d'une image a partir de son chemin (chat = 1, sinon = 0)
+    // =========================================================
+    // 🎛️ INTERRUPTEURS DE TEST (Pour comparer les performances)
+    // =========================================================
+    static final boolean ACTIVER_HISTOGRAMME   = false;  // Teste l'égalisation
+    static final boolean ACTIVER_NORMALISATION = true; // Teste la standardisation
+    // =========================================================
+
+    public static NeuroneHistogrm egaliseur = new NeuroneHistogrm();
+    public static NeuroneNormalis normaliseur; 
+
     static int labelChat(String chemin) {
         return chemin.contains("/cat/") || chemin.contains("\\cat\\") ? 1 : 0;
     }
 
-    // Normalise les pixels de [0, 255] vers [0, 1]
-    static float[] normalise(int[] donnees) {
+    // Méthode unifiée pour l'interface UI et le jeu de Test
+    public static float[] pretraiter(int[] donnees) {
+        int[] pixels = donnees;
+        
+        // 1. Histogramme (si activé)
+        if (ACTIVER_HISTOGRAMME) {
+            pixels = egaliseur.egaliser(donnees);
+        }
+        
         float[] f = new float[donnees.length];
-        for (int i = 0; i < donnees.length; ++i)
-            f[i] = donnees[i] / 255.0f;
+        
+        // 2. Normalisation Globale vs Division par 255
+        if (ACTIVER_NORMALISATION && normaliseur != null) {
+            double[] srcDouble = new double[donnees.length];
+            for (int i = 0; i < donnees.length; ++i) srcDouble[i] = pixels[i];
+            
+            double[] resDouble = normaliseur.normaliser(srcDouble);
+            
+            for (int i = 0; i < donnees.length; ++i) f[i] = (float) resDouble[i];
+        } else {
+            // Si la normalisation globale est désactivée, on replie sur la méthode classique (0 à 1)
+            for (int i = 0; i < donnees.length; ++i) f[i] = pixels[i] / 255.0f;
+        }
         return f;
     }
 
     public static void main(String[] args)
     {
-        System.out.println("[1/4] Chargement de la base de donnees...");
+        System.out.println("[1/4] Chargement de la base de donnees et pretraitement...");
         List<String> cheminsTrain = Image.listeFichiers(DIR_TRAIN);
         if (cheminsTrain == null || cheminsTrain.isEmpty()) {
             System.err.println("Aucun fichier trouve dans " + DIR_TRAIN);
             return;
         }
 
-        // Melange des chemins AVANT chargement
         Collections.shuffle(cheminsTrain, new Random(SEED));
 
         final int N = cheminsTrain.size();
-        float[][] entreesTrain = new float[N][];
-        float[]   ciblesTrain  = new float[N];
         int nbChat = 0;
         long t0 = System.currentTimeMillis();
+
+        int[][] pixelsEtape1 = new int[N][];
+        float[] ciblesTrain  = new float[N];
+
+        // --- ETAPE A : Chargement + Histogramme ---
         for (int i = 0; i < N; ++i) {
             int lbl = labelChat(cheminsTrain.get(i));
             Image im = new Image(cheminsTrain.get(i), lbl, NIVEAUX_DE_GRIS);
-            entreesTrain[i] = normalise(im.donnees());
+            
+            if (ACTIVER_HISTOGRAMME) {
+                pixelsEtape1[i] = egaliseur.egaliser(im.donnees());
+            } else {
+                pixelsEtape1[i] = im.donnees();
+            }
+            
             ciblesTrain[i]  = lbl;
             if (lbl == 1) ++nbChat;
-            if ((i+1) % 1000 == 0)
-                System.out.printf("    %d / %d images chargees%n", i+1, N);
+            if ((i+1) % 1000 == 0) System.out.printf("    %d / %d images traitees (Etape 1)%n", i+1, N);
+        }
+
+        final int tailleEntree = pixelsEtape1[0].length;
+        float[][] entreesTrain = new float[N][tailleEntree];
+
+        // --- ETAPE B : Calcul des stats et Normalisation ---
+        if (ACTIVER_NORMALISATION) {
+            System.out.println("    Calcul des statistiques globales du dataset...");
+            double sommePixels = 0;
+            long totalElements = (long) N * tailleEntree;
+
+            for (int i = 0; i < N; ++i) {
+                for (int j = 0; j < tailleEntree; ++j) sommePixels += pixelsEtape1[i][j];
+            }
+            double moyenneGlobale = sommePixels / totalElements;
+
+            double sommeCarresDiff = 0;
+            for (int i = 0; i < N; ++i) {
+                for (int j = 0; j < tailleEntree; ++j) {
+                    double diff = pixelsEtape1[i][j] - moyenneGlobale;
+                    sommeCarresDiff += diff * diff;
+                }
+            }
+            double ecartTypeGlobal = Math.sqrt(sommeCarresDiff / totalElements);
+            System.out.printf("    Stats globales -> Moyenne : %.2f, Ecart-Type : %.2f%n", moyenneGlobale, ecartTypeGlobal);
+
+            normaliseur = new NeuroneNormalis(moyenneGlobale, ecartTypeGlobal);
+            
+            // Appliquer la normalisation Z-Score
+            for (int i = 0; i < N; ++i) {
+                double[] srcDouble = new double[tailleEntree];
+                for (int j = 0; j < tailleEntree; ++j) srcDouble[j] = pixelsEtape1[i][j];
+                double[] resDouble = normaliseur.normaliser(srcDouble);
+                for (int j = 0; j < tailleEntree; ++j) entreesTrain[i][j] = (float) resDouble[j];
+            }
+        } else {
+            // Si pas de normalisation, on divise simplement par 255
+            for (int i = 0; i < N; ++i) {
+                for (int j = 0; j < tailleEntree; ++j) {
+                    entreesTrain[i][j] = pixelsEtape1[i][j] / 255.0f;
+                }
+            }
         }
 
         long dt = System.currentTimeMillis() - t0;
-        System.out.printf("    %d images chargees en %.1f s (%d chats, %d non-chats)%n",
-                          N, dt/1000.0, nbChat, N-nbChat);
+        System.out.printf("    %d images pretraitees en %.1f s (%d chats, %d non-chats)%n", N, dt/1000.0, nbChat, N-nbChat);
 
         // Creation du neurone
-        final int tailleEntree = entreesTrain[0].length;
         System.out.println("[2/4] Creation du neurone sigmoide");
-        System.out.printf("    %d entrees (= %dx%d pixels)%n",
-                          tailleEntree, 64, 64);
         Neurone.fixeCoefApprentissage(ETA);
         iNeurone n = new NeuroneSigmoide(tailleEntree);
 
         // Apprentissage avec sigmoide
-        System.out.printf("[3/4] Apprentissage (eta=%.4f, MSElimite=%.3f)...%n",
-                          ETA, MSE_LIMITE);
+        System.out.printf("[3/4] Apprentissage (eta=%.4f, MSElimite=%.3f)...%n", ETA, MSE_LIMITE);
         long tA = System.currentTimeMillis();
         n.apprentissage(entreesTrain, ciblesTrain, MSE_LIMITE);
         long dtA = System.currentTimeMillis() - tA;
@@ -81,11 +144,15 @@ public class ChaineTraitImage
         // Evaluation sur le jeu de test
         System.out.println("[4/4] Evaluation sur le jeu de test...");
         List<String> cheminsTest = Image.listeFichiers(DIR_TEST);
-        int vp = 0, vn = 0, fp = 0, fn = 0; // vrai positif, vrai negatif, faux positif, faux negatif (positif = predit chat, negatif = predit autre)
+        int vp = 0, vn = 0, fp = 0, fn = 0; 
+
         for (String chemin : cheminsTest) {
             int vraiLbl = labelChat(chemin);
             Image im = new Image(chemin, vraiLbl, NIVEAUX_DE_GRIS);
-            float[] e = normalise(im.donnees());
+            
+            // Utilisation de la methode unifiee pour le test
+            float[] e = pretraiter(im.donnees());
+
             n.metAJour(e);
             int predit = n.sortie() >= SEUIL_DECISION ? 1 : 0;
             if      (vraiLbl == 1 && predit == 1) ++vp;
@@ -101,19 +168,14 @@ public class ChaineTraitImage
         double baseline  = 100.0 * Math.max(vp+fn, vn+fp) / total;
 
         System.out.println("================ RESULTATS ================");
-        System.out.printf("Base de données : %d images%n", total);
+        System.out.printf("Base de donnees : %d images%n", total);
         System.out.println("Matrice de confusion :");
         System.out.println("                  predit=chat  predit=autre");
         System.out.printf("  reel=chat       %6d        %6d%n", vp, fn);
         System.out.printf("  reel=autre      %6d        %6d%n", fp, vn);
         System.out.printf("Accuracy  : %.2f %%%n", accuracy);
-        System.out.printf("Precision : %.2f %% (parmi predits chat, combien vrais)%n", precision);
-        System.out.printf("Rappel    : %.2f %% (parmi vrais chats, combien retrouves)%n", rappel);
-        System.out.printf("Baseline (classifieur trivial 'tout autre') : %.2f %%%n", baseline);
+        System.out.printf("Baseline  : %.2f %%%n", baseline);
         System.out.println("===========================================");
-
-
-        // Interface UI
 
         UserInterface.start(cheminsTest, n);
     }

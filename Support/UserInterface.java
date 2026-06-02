@@ -59,8 +59,7 @@ public class UserInterface extends JFrame {
 
         // Traitement du signal par le neurone
         Image imageJava = new Image(cheminAleatoire, vraiLabel, false);
-        float[] entreesNormalisees = ChaineTraitImage.normalise(imageJava.donnees());
-
+        float[] entreesNormalisees = ChaineTraitImage.pretraiter(imageJava.donnees());
         neuroneEntraine.metAJour(entreesNormalisees);
         float score = neuroneEntraine.sortie();
 
