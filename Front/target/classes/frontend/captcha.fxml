@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<VBox xmlns="http://javafx.com/javafx/17"
+      xmlns:fx="http://javafx.com/fxml/1"
+      fx:controller="org.example.CaptchaController"
+      fx:id="mainContainer"
+      styleClass="captcha-root"
+      spacing="20"
+      alignment="CENTER"
+      prefWidth="380">
+
+    <!-- HEADER -->
+    <HBox alignment="CENTER_LEFT" spacing="12" styleClass="captcha-header">
+        <Label text="🔒" style="-fx-font-size: 20px;"/>
+        <VBox spacing="2">
+            <Label text="Vérification de sécurité" styleClass="captcha-title"/>
+            <Label text="reCAPTCHA™ (version chat/chien)" styleClass="captcha-version"/>
+        </VBox>
+    </HBox>
+
+    <Separator/>
+
+    <!-- INSTRUCTION -->
+    <VBox spacing="6" alignment="CENTER">
+        <Label fx:id="titleLabel" text="Prouvez que vous n'êtes pas un robot"
+               styleClass="captcha-main-title" wrapText="true" textAlignment="CENTER"/>
+        <Label fx:id="instructionLabel"
+               text="Cliquez sur toutes les images de 🐱 CHATS"
+               styleClass="captcha-instruction" wrapText="true" textAlignment="CENTER"/>
+    </VBox>
+
+    <!-- GRILLE D'IMAGES 3x3 -->
+    <GridPane fx:id="imageGrid" hgap="8" vgap="8" alignment="CENTER"
+              styleClass="captcha-grid"/>
+
+    <!-- STATUS -->
+    <Label fx:id="statusLabel" text=""
+           styleClass="captcha-status" wrapText="true" textAlignment="CENTER"
+           maxWidth="340"/>
+
+    <Separator/>
+
+    <!-- ROBOT BAR -->
+    <VBox spacing="5">
+        <Label fx:id="robotLabel" text="Probabilité d'être un robot : 0%"
+               styleClass="robot-label"/>
+        <ProgressBar fx:id="robotBar" progress="0" prefWidth="340" prefHeight="10"
+                     styleClass="robot-bar"/>
+    </VBox>
+
+    <Separator/>
+
+    <!-- FOOTER -->
+    <HBox spacing="15" alignment="CENTER">
+        <Label fx:id="attemptsLabel" text="Tentative 0/3"
+               styleClass="attempts-label"/>
+        <Region HBox.hgrow="ALWAYS"/>
+        <Button fx:id="verifyBtn" text="✓  Je ne suis pas un robot"
+                onAction="#handleVerify" styleClass="captcha-verify-btn"
+                prefWidth="220" prefHeight="42"/>
+    </HBox>
+
+    <!-- Petit texte légal fictif drôle -->
+    <Label text="Protégé par reCAPTCHA | Conditions fictives | Nous savons que tu es un robot"
+           styleClass="captcha-legal" wrapText="true" textAlignment="CENTER"/>
+
+</VBox>

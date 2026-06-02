@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.shape.*?>
+
+<BorderPane xmlns="http://javafx.com/javafx/17"
+            xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="org.example.WelcomeController"
+            styleClass="welcome-root">
+
+    <center>
+        <StackPane>
+            <!-- Cercles décoratifs -->
+            <Circle fx:id="circle1" radius="200" styleClass="deco-circle"
+                    translateX="-450" translateY="-300"/>
+            <Circle fx:id="circle2" radius="150" styleClass="deco-circle"
+                    translateX="500" translateY="350"/>
+            <Circle fx:id="circle3" radius="100" styleClass="deco-circle"
+                    translateX="450" translateY="-380"/>
+            <Circle fx:id="circle4" radius="80" styleClass="deco-circle"
+                    translateX="-500" translateY="350"/>
+
+            <!-- Contenu principal -->
+            <VBox fx:id="mainContainer" alignment="CENTER" spacing="35"
+                  styleClass="welcome-content">
+
+                <!-- Emojis animés -->
+                <HBox alignment="CENTER" spacing="50">
+                    <Label fx:id="catEmoji" text="🐱" styleClass="animal-emoji"/>
+                    <Label fx:id="dogEmoji" text="🐶" styleClass="animal-emoji"/>
+                </HBox>
+
+                <!-- Titre -->
+                <VBox alignment="CENTER" spacing="8">
+                    <Label fx:id="titleLabel" text="Cat vs Dog" styleClass="welcome-title"/>
+                    <Label fx:id="subtitleLabel" text="Classification par Intelligence Artificielle"
+                           styleClass="welcome-subtitle"/>
+                </VBox>
+
+                <!-- Séparateur -->
+                <Separator styleClass="welcome-separator" prefWidth="250"/>
+
+                <!-- Description -->
+                <Label fx:id="descriptionLabel"
+                       text="Analysez vos images grâce à un neurone artificiel.&#10;Glissez une photo et découvrez si c'est un chat ou un chien."
+                       styleClass="welcome-description"
+                       textAlignment="CENTER"
+                       wrapText="true"
+                       maxWidth="550"/>
+
+                <!-- Bouton démarrer -->
+                <Label fx:id="startLabel"
+                       text=" Cliquer pour démarrer "
+                       styleClass="start-button"
+                       onMouseClicked="#handleStart"
+                       onMouseEntered="#handleStartHover"
+                       onMouseExited="#handleStartExit"/>
+
+            </VBox>
+        </StackPane>
+    </center>
+
+</BorderPane>
