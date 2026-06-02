@@ -38,4 +38,4 @@ Pour compiler et exécuter le projet d'entraînement :
 javac *.java 
 
 # Lancement de la routine d'entraînement et de test
-java ProjetISEN
+java [NOM DU FICHIER]
