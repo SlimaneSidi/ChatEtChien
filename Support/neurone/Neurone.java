@@ -67,8 +67,8 @@ public abstract class Neurone implements iNeurone
 		etatInterne = activation(somme);
 	}
 	
-	// Fonction d'apprentissage relative à la mse
-	public void apprentissage(final float[][] entrees, final float[] resultats, final float MSElimite)
+	// Fonction d'apprentissage relative à la mse ; renvoie le nombre d'itérations effectuées
+	public int apprentissage(final float[][] entrees, final float[] resultats, final float MSElimite)
 	{
 		double mse = 0.;
 		int iter = 0;
@@ -90,6 +90,7 @@ public abstract class Neurone implements iNeurone
 			iter += 1;
 		}
 		while (mse > MSElimite);
+		return iter;
 	}
 
 	public void sauvegarde(String chemin) // optionel

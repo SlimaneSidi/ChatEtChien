@@ -6,7 +6,7 @@ import java.util.*;
 // Label : 1 = chat, 0 = autre (chien ou wild).
 //
 // javac neurone/*.java *.java
-// java -cp .;neurone ChaineTraitImage
+// java -cp ".;neurone" ChaineTraitImage
 
 public class ChaineTraitImage
 {
@@ -14,7 +14,7 @@ public class ChaineTraitImage
     static final String DIR_TRAIN = "../dataset_groupe_9/train";
     static final String DIR_TEST  = "../dataset_groupe_9/test";
     static final float ETA        = 0.001f;
-    static final float MSE_LIMITE = 0.1f;
+    static final float MSE_LIMITE = 0.01f;
     static final float SEUIL_DECISION = 0.5f;
     static final long  SEED       = 42L;
 
@@ -74,13 +74,13 @@ public class ChaineTraitImage
         System.out.printf("[3/4] Apprentissage (eta=%.4f, MSElimite=%.3f)...%n",
                           ETA, MSE_LIMITE);
         long tA = System.currentTimeMillis();
-        n.apprentissage(entreesTrain, ciblesTrain, MSE_LIMITE);
+        int nbIterations = n.apprentissage(entreesTrain, ciblesTrain, MSE_LIMITE);
         long dtA = System.currentTimeMillis() - tA;
         System.out.printf("    Apprentissage termine en %.1f s%n", dtA/1000.0);
 
         // Evaluation sur le jeu de test
-        System.out.println("[4/4] Evaluation sur le jeu de test...");
-        List<String> cheminsTest = Image.listeFichiers(DIR_TEST);
+        System.out.println("[4/4] Evaluation sur la base de donnée...");
+        List<String> cheminsTest = Image.listeFichiers(DIR_TRAIN);
         int vp = 0, vn = 0, fp = 0, fn = 0; // vrai positif, vrai negatif, faux positif, faux negatif (positif = predit chat, negatif = predit autre)
         for (String chemin : cheminsTest) {
             int vraiLbl = labelChat(chemin);
@@ -98,7 +98,7 @@ public class ChaineTraitImage
         double accuracy  = 100.0 * (vp + vn) / total;
         double precision = vp + fp == 0 ? 0 : 100.0 * vp / (vp + fp);
         double rappel    = vp + fn == 0 ? 0 : 100.0 * vp / (vp + fn);
-        double baseline  = 100.0 * Math.max(vp+fn, vn+fp) / total;
+        //double baseline  = 100.0 * Math.max(vp+fn, vn+fp) / total;
 
         System.out.println("================ RESULTATS ================");
         System.out.printf("Base de données : %d images%n", total);
@@ -109,12 +109,65 @@ public class ChaineTraitImage
         System.out.printf("Accuracy  : %.2f %%%n", accuracy);
         System.out.printf("Precision : %.2f %% (parmi predits chat, combien vrais)%n", precision);
         System.out.printf("Rappel    : %.2f %% (parmi vrais chats, combien retrouves)%n", rappel);
-        System.out.printf("Baseline (classifieur trivial 'tout autre') : %.2f %%%n", baseline);
         System.out.println("===========================================");
+
+        // Journalisation des resultats (ajout en fin de Rapport/Results.md, sans ecraser)
+        String type = NIVEAUX_DE_GRIS ? "NiveauDeGris" : "RGB";
+        String neurone = n.getClass().getSimpleName();
+        enregistreResultats(type, neurone, N, nbIterations, ETA, MSE_LIMITE,
+                            accuracy, precision, rappel);
 
 
         // Interface UI
 
         UserInterface.start(cheminsTest, n);
+    }
+
+    // Ajoute une ligne de resultats a Rapport/Results.md.
+    // Cree le fichier (et l'entete du tableau) s'il n'existe pas ou est vide,
+    // sinon ajoute simplement une ligne sans effacer le contenu existant.
+    // L'id est auto-incremente a partir du plus grand id deja present.
+    static void enregistreResultats(String type, String neurone, int nbImagesTrain,
+                                    int iterations, float eta, float mseLimite,
+                                    double accuracy, double precision, double rappel) {
+        final String chemin = "../Rapport/Results.md";
+        final String entete =
+            "# Resultats des executions\n\n" +
+            "| id | date | type | neurone | images_train | iterations | eta | mse_limite | accuracy (%) | precision (%) | rappel (%) |\n" +
+            "|----|------|------|---------|--------------|------------|-----|------------|--------------|---------------|------------|\n";
+        try {
+            java.io.File f = new java.io.File(chemin);
+            int prochainId = 1;
+            boolean entetePresente = false;
+            if (f.exists() && f.length() > 0) {
+                for (String ligne : java.nio.file.Files.readAllLines(f.toPath())) {
+                    String t = ligne.trim();
+                    if (t.startsWith("| id ")) {
+                        entetePresente = true;
+                    } else if (t.startsWith("|")) {
+                        String[] cols = t.split("\\|");
+                        if (cols.length > 1) {
+                            try {
+                                int id = Integer.parseInt(cols[1].trim());
+                                if (id >= prochainId) prochainId = id + 1;
+                            } catch (NumberFormatException ignore) { /* separateur ou entete */ }
+                        }
+                    }
+                }
+            }
+            try (java.io.FileWriter w = new java.io.FileWriter(f, true)) { // true = ajout
+                if (!entetePresente) w.write(entete);
+                String date = java.time.LocalDateTime.now()
+                    .format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                w.write(String.format(java.util.Locale.US,
+                    "| %d | %s | %s | %s | %d | %d | %.4f | %.3f | %.2f | %.2f | %.2f |%n",
+                    prochainId, date, type, neurone, nbImagesTrain, iterations,
+                    eta, mseLimite, accuracy, precision, rappel));
+            }
+            System.out.printf("Resultats ajoutes a %s (id=%d)%n", chemin, prochainId);
+        } catch (java.io.IOException e) {
+            System.err.println("Impossible d'ecrire les resultats dans " + chemin);
+            e.printStackTrace();
+        }
     }
 }

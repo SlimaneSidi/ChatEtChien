@@ -1,14 +1,6 @@
-Itération 9166, mse:  0.070000
-    Apprentissage termine en 560.9 s
-[4/4] Evaluation sur le jeu de test...
-================ RESULTATS ================
-Base de données : 3200 images
-Matrice de confusion :
-                  predit=chat  predit=autre
-  reel=chat          760           362
-  reel=autre         417          1661
-Accuracy  : 75.66 %
-Precision : 64.57 % (parmi predits chat, combien vrais)
-Rappel    : 67.74 % (parmi vrais chats, combien retrouves)
-Baseline (classifieur trivial 'tout autre') : 64.94 %
-===========================================
+# Resultats des executions
+
+| id | date | type | neurone | images_train | iterations | eta | mse_limite | accuracy (%) | precision (%) | rappel (%) |
+|----|------|------|---------|--------------|------------|-----|------------|--------------|---------------|------------|
+| 1 | 2026-06-02 09:20:39 | RGB | NeuroneSigmoide | 10000 | 228 | 0.0010 | 0.050 | 92.72 | 87.60 | 92.00 |  // Ouais bon il fait encore de la D
+| 2 | 2026-06-02 09:31:00 | RGB | NeuroneSigmoide | 10000 | 1678 | 0.0010 | 0.010 | 95.72 | 89.53 | 99.25 | // la c'est vraiment strong
