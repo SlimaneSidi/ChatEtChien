@@ -16,8 +16,8 @@ public class ChaineTraitImage
     static final String DIR_TRAIN = "../dataset_groupe_9/train";
     static final String DIR_TEST  = "../dataset_groupe_9/test";
     static final float ETA        = 0.001f;
-    static final float MSE_LIMITE = 0.075f;
-    static final long  SEED       = 11L;
+    static final float MSE_LIMITE = 0.05f;
+    static final long  SEED       = 1190L;
     static final String DIR_MODELE = "../modeles";     // dossier des sauvegardes
     static final boolean FORCER_ENTRAINEMENT = true;
     static final String[] TYPE = {"chat", "chien", "wild"};
@@ -259,7 +259,7 @@ public class ChaineTraitImage
             try (java.io.FileWriter w = new java.io.FileWriter(f, true)) {
                 if (!entetePresente) w.write(entete);
                 String date = java.time.LocalDateTime.now()
-                    .format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss dd-MM-yyyy"));
+                    .format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss dd-MM"));
                 w.write(String.format(java.util.Locale.US,
                     "| %d | %s | %s | %s | %d | %d | %.4f | %.3f | %.2f | %.2f | %.2f |%n",
                     prochainId, date, type, neurone, nbImagesTrain, iterations,

@@ -1,5 +1,5 @@
-// Histogramme de Gradients Orientes (HOG, Dalal & Triggs 2005).
-// Transforme une image en niveaux de gris en un vecteur de caracteristiques
+// HOG : Histogramme de Gradients Orientes
+/* Transforme une image en niveaux de gris en un vecteur de caracteristiques
 // decrivant les contours (directions de gradient), bien plus separable
 // lineairement que les pixels bruts -> ideal pour un neurone mono-couche.
 //
@@ -7,7 +7,7 @@
 //            -> normalisation par bloc (L2) -> concatenation.
 //
 // Pour une image 64x64 : 8x8 cellules, blocs 2x2, 9 orientations
-//   => 7x7 blocs x (2x2x9) = 49 x 36 = 1764 entrees (contre 12288 en RGB brut).
+//   => 7x7 blocs x (2x2x9) = 49 x 36 = 1764 entrees (contre 12288 en RGB brut). */
 
 public class Hog
 {
