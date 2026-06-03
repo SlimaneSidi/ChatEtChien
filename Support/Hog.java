@@ -1,22 +1,19 @@
-// HOG : Histogramme de Gradients Orientes
-/* Transforme une image en niveaux de gris en un vecteur de caracteristiques
-// decrivant les contours (directions de gradient), bien plus separable
-// lineairement que les pixels bruts -> ideal pour un neurone mono-couche.
-//
-// Pipeline : gradients -> histogrammes d'orientation par cellule
-//            -> normalisation par bloc (L2) -> concatenation.
-//
-// Pour une image 64x64 : 8x8 cellules, blocs 2x2, 9 orientations
-//   => 7x7 blocs x (2x2x9) = 49 x 36 = 1764 entrees (contre 12288 en RGB brut). */
+/* HOG : Histogramme de Gradients Orientes
+
+Transforme une image en niveaux de gris en un vecteur de caracteristiques 
+decrivant les contours (directions de gradient) car bien plus separable lineairement que les pixels bruts
+
+Ordre : gradients -> histogrammes d'orientation par cellule -> normalisation par bloc (L2) -> concatenation.
+
+Pour une image 64x64 : 8x8 cellules, blocs 2x2, 9 orientations => 7x7 blocs x (2x2x9) = 49 x 36 = 1764 entrees */
 
 public class Hog
 {
-    static final int   TAILLE_CELLULE   = 8;     // cote d'une cellule, en pixels
-    static final int   CELLULES_BLOC    = 2;     // cote d'un bloc, en cellules
-    static final int   NB_ORIENTATIONS  = 9;     // bins d'orientation sur [0, 180)
+    static final int   TAILLE_CELLULE   = 8;     // cote d'une cell en pixels
+    static final int   CELLULES_BLOC    = 2;     // cote d'un bloc en cell
+    static final int   NB_ORIENTATIONS  = 9;
     static final float EPSILON          = 1e-6f; // evite la division par zero
 
-    // Nombre d'entrees produites pour une image largeur x hauteur (sans la calculer)
     public static int taille(int largeur, int hauteur) {
         int cellulesX = largeur / TAILLE_CELLULE;
         int cellulesY = hauteur / TAILLE_CELLULE;
@@ -26,13 +23,12 @@ public class Hog
         return blocsX * blocsY * CELLULES_BLOC * CELLULES_BLOC * NB_ORIENTATIONS;
     }
 
-    // Calcule le descripteur HOG d'une image en niveaux de gris (valeurs 0..255,
+    // Calcule le descripteur HOG d'une image en niveaux de gris
     // applatie ligne par ligne, taille = largeur*hauteur).
     public static float[] calcule(int[] gris, int largeur, int hauteur)
     {
-        // --- 1. Gradients en chaque pixel (magnitude + orientation non signee) ---
-        float[] mag = new float[largeur * hauteur];
-        float[] ori = new float[largeur * hauteur]; // en degres, ramene a [0, 180)
+        float[] mag = new float[largeur * hauteur]; // magnitude (force du contour)
+        float[] ori = new float[largeur * hauteur]; // orientation
         for (int y = 0; y < hauteur; ++y) {
             for (int x = 0; x < largeur; ++x) {
                 final int xg = Math.max(0, x - 1), xd = Math.min(largeur - 1, x + 1);
@@ -48,7 +44,7 @@ public class Hog
             }
         }
 
-        // --- 2. Histogramme d'orientations par cellule (interpolation entre bins) ---
+        // Histogramme d'orientations par cellule
         final int cellulesX = largeur / TAILLE_CELLULE;
         final int cellulesY = hauteur / TAILLE_CELLULE;
         final float largeurBin = 180f / NB_ORIENTATIONS;
@@ -60,7 +56,7 @@ public class Hog
                     for (int dx = 0; dx < TAILLE_CELLULE; ++dx) {
                         final int idx = (cy * TAILLE_CELLULE + dy) * largeur
                                       + (cx * TAILLE_CELLULE + dx);
-                        // repartition lineaire de la magnitude sur les 2 bins voisins
+                        // repartition lineaire de la mag sur les 2 voisins
                         final float posBin = ori[idx] / largeurBin - 0.5f;
                         final int bas = (int) Math.floor(posBin);
                         final float frac = posBin - bas;
@@ -73,7 +69,7 @@ public class Hog
             }
         }
 
-        // --- 3. Normalisation par bloc (L2) et concatenation du descripteur ---
+        // Normalisation et concatenation
         final int blocsX = cellulesX - CELLULES_BLOC + 1;
         final int blocsY = cellulesY - CELLULES_BLOC + 1;
         final int tailleBloc = CELLULES_BLOC * CELLULES_BLOC * NB_ORIENTATIONS;
