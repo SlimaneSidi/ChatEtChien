@@ -32,10 +32,10 @@ L'objectif principal est de concevoir et d'entraîner un réseau de neurones art
 * `Projet IA_Java_Signal 2026-06-01.pdf` : Cahier des charges et directives du projet.
 
 ## Exécution
-Pour compiler et exécuter le projet d'entraînement :
+Pour compiler et exécuter le projet depuis le dossier Support:
 ```bash
 # Compilation des fichiers Java
-javac *.java 
+javac neurone/*.java *.java      
 
 # Lancement de la routine d'entraînement et de test
-java [NOM DU FICHIER]
+java -cp .:neurone ChaineTraitImage
