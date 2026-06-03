@@ -56,12 +56,13 @@ public class UserInterface extends JFrame {
         int typeReel = ChaineTraitImage.typeReel(cheminAleatoire);
         String reelTexte = ChaineTraitImage.TYPE[typeReel];
 
-        // Traitement du signal : classe predite = argmax des 3 neurones
-        Image imageJava = new Image(cheminAleatoire, typeReel, false);
-        float[] entreesNormalisees = ChaineTraitImage.normalise(imageJava.donnees());
+        // Traitement du signal : classe predite = argmax des 3 neurones (memes
+        // caracteristiques HOG qu'a l'apprentissage)
+        Image imageJava = new Image(cheminAleatoire, typeReel, ChaineTraitImage.NIVEAUX_DE_GRIS);
+        float[] entrees = ChaineTraitImage.caracteristiques(imageJava);
 
-        int predit = ChaineTraitImage.predictionType(neurones, entreesNormalisees);
-        neurones[predit].metAJour(entreesNormalisees); // recupere le score du neurone gagnant
+        int predit = ChaineTraitImage.predictionType(neurones, entrees);
+        neurones[predit].metAJour(entrees); // recupere le score du neurone gagnant
         float score = neurones[predit].sortie();
         String preditTexte = ChaineTraitImage.TYPE[predit];
 

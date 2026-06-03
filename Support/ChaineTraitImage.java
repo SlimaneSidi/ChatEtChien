@@ -1,8 +1,9 @@
 import java.util.*;
 
 // 3 neurones sigmoides (1 par type)
-// Chaine de traitement complete : lecture des images, normalisation, miroir
-// horizontal, melange, apprentissage de 3 neurones.
+// Chaine de traitement complete : lecture des images, extraction des
+// caracteristiques HOG (Histogramme de Gradients Orientes), miroir horizontal,
+// melange, apprentissage de 3 neurones.
 // TYPE : 0 = chat, 1 = chien, 2 = wild
 //
 // javac neurone/*.java *.java
@@ -10,7 +11,8 @@ import java.util.*;
 
 public class ChaineTraitImage
 {
-    static final boolean NIVEAUX_DE_GRIS = false;
+    // HOG travaille sur le gradient : on lit les images en niveaux de gris.
+    static final boolean NIVEAUX_DE_GRIS = true;
     static final String DIR_TRAIN = "../dataset_groupe_9/train";
     static final String DIR_TEST  = "../dataset_groupe_9/test";
     static final float ETA        = 0.001f;
@@ -57,27 +59,19 @@ public class ChaineTraitImage
         return true;
     }
 
-    // Normalise les pixels de 0 à 255 vers 0 à 1
-    static float[] normalise(int[] donnees) {
-        float[] f = new float[donnees.length];
-        for (int i = 0; i < donnees.length; ++i)
-            f[i] = donnees[i] / 255.0f;
-        return f;
+    // Caracteristiques HOG d'une image (entrees du neurone). Point d'entree unique
+    // partage avec l'UI pour garantir le meme pretraitement a l'apprentissage et au test.
+    static float[] caracteristiques(Image im) {
+        return Hog.calcule(im.donnees(), im.largeur(), im.hauteur());
     }
 
-    // Inverse la colonne j -> largeur-1-j en conservant l'ordre du traitement
-    // traitement = 1 en niveaux de gris, 3 en RGB
-    static float[] miroirHorizontal(float[] src, int largeur, int hauteur, boolean niveauxDeGris) {
-        final int traitement = niveauxDeGris ? 1 : 3;  
-        float[] dst = new float[src.length];
-        for (int i = 0; i < hauteur; ++i) {
-            for (int j = 0; j < largeur; ++j) {
-                final int idxSrc = (i * largeur + j) * traitement;
-                final int idxDst = (i * largeur + (largeur-1 - j))  * traitement;
-                for (int c = 0; c < traitement; ++c)
-                    dst[idxDst + c] = src[idxSrc + c];
-            }
-        }
+    // Miroir horizontal d'une image en niveaux de gris (colonne j -> largeur-1-j).
+    // Sert d'augmentation de donnees : on recalcule ensuite le HOG sur l'image inversee.
+    static int[] miroirGris(int[] src, int largeur, int hauteur) {
+        int[] dst = new int[src.length];
+        for (int i = 0; i < hauteur; ++i)
+            for (int j = 0; j < largeur; ++j)
+                dst[i * largeur + (largeur-1 - j)] = src[i * largeur + j];
         return dst;
     }
 
@@ -115,10 +109,11 @@ public class ChaineTraitImage
             for (int i = 0; i < N; ++i) {
                 int type = typeReel(cheminsTrain.get(i));
                 Image im = new Image(cheminsTrain.get(i), type, NIVEAUX_DE_GRIS);
-                float[] e = normalise(im.donnees());
-                entreesTrain[i]   = e;
-                // Image miroir ajoutée à la 2e moitie du tab
-                entreesTrain[N+i] = miroirHorizontal(e, im.largeur(), im.hauteur(), NIVEAUX_DE_GRIS);
+                int[] gris = im.donnees();
+                entreesTrain[i]   = Hog.calcule(gris, im.largeur(), im.hauteur());
+                // Image miroir ajoutée à la 2e moitie du tab (HOG recalcule sur l'inverse)
+                int[] grisMiroir  = miroirGris(gris, im.largeur(), im.hauteur());
+                entreesTrain[N+i] = Hog.calcule(grisMiroir, im.largeur(), im.hauteur());
                 // Cible 1 pour le neurone du bon type, 0 others
                 for (int k = 0; k < NB_TYPE; ++k) {
                     float cible = (type == k) ? 1f : 0f;
@@ -139,8 +134,7 @@ public class ChaineTraitImage
             // Creation des 3 neurones sigmoides (un par type)
             tailleEntree = entreesTrain[0].length;
             System.out.println("[2/4] Creation des 3 neurones sigmoides");
-            System.out.printf("    %d entrees (= %dx%d pixels x3 RGB)%n",
-                              tailleEntree, 64, 64);
+            System.out.printf("    %d entrees (caracteristiques HOG)%n", tailleEntree);
             for (int k = 0; k < NB_TYPE; ++k)
                 neurones[k] = new NeuroneSigmoide(tailleEntree);
 
@@ -169,7 +163,8 @@ public class ChaineTraitImage
                 System.err.println("Aucun fichier trouve dans " + DIR_TEST);
                 return;
             }
-            tailleEntree = new Image(echantillon.get(0), 0, NIVEAUX_DE_GRIS).taille();
+            Image ref = new Image(echantillon.get(0), 0, NIVEAUX_DE_GRIS);
+            tailleEntree = Hog.taille(ref.largeur(), ref.hauteur());
             System.out.printf("    %d entrees attendues par neurone%n", tailleEntree);
             for (int k = 0; k < NB_TYPE; ++k) {
                 neurones[k] = new NeuroneSigmoide(tailleEntree);
@@ -184,7 +179,7 @@ public class ChaineTraitImage
         for (String chemin : cheminsTest) {
             int reel = typeReel(chemin);
             Image im = new Image(chemin, reel, NIVEAUX_DE_GRIS);
-            float[] e = normalise(im.donnees());
+            float[] e = caracteristiques(im);
             int predit = predictionType(neurones, e);
             conf[reel][predit]++;
         }
@@ -224,7 +219,7 @@ public class ChaineTraitImage
         System.out.println("===========================================");
 
         // print des resultats dans Results.md
-        String type = (NIVEAUX_DE_GRIS ? "NiveauDeGris" : "RGB") + " Miroir";
+        String type = "HOG Miroir";
         String neurone = "NeuroneSigmoide x" + NB_TYPE;
         enregistreResultats(type, neurone, nbImagesTrain, totalIterations, ETA, MSE_LIMITE,
                             moyenne, precision, rappel);
