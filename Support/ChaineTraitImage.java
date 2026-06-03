@@ -17,7 +17,7 @@ public class ChaineTraitImage
     static final String DIR_TEST  = "../dataset_groupe_9/test";
     static final float ETA        = 0.001f;
     static final float MSE_LIMITE = 0.05f;
-    static final long  SEED       = 1190L;
+    static final long  SEED       = 6767L;
     static final String DIR_MODELE = "../modeles";     // dossier des sauvegardes
     static final boolean FORCER_ENTRAINEMENT = true;
     static final String[] TYPE = {"chat", "chien", "wild"};
@@ -143,7 +143,7 @@ public class ChaineTraitImage
                               ETA, MSE_LIMITE);
             long tA = System.currentTimeMillis();
             for (int k = 0; k < NB_TYPE; ++k) {
-                System.out.printf("    -- Neurone %s --%n", TYPE[k]);
+                System.out.printf("   Neurone %s%n", TYPE[k]);
                 totalIterations += neurones[k].apprentissage(entreesTrain, ciblesTrain[k], MSE_LIMITE);
             }
             long dtA = System.currentTimeMillis() - tA;
@@ -200,7 +200,7 @@ public class ChaineTraitImage
             System.out.printf("  %-8s %8d %8d %8d%n",
                 TYPE[r], conf[r][0], conf[r][1], conf[r][2]);
 
-        double sommePrecision = 0, sommeRappel = 0;
+        double sommePrecision = 0, sommecatched = 0;
         System.out.println("Par type :");
         for (int k = 0; k < NB_TYPE; ++k) {
             int tp = conf[k][k];
@@ -208,21 +208,21 @@ public class ChaineTraitImage
             for (int x = 0; x < NB_TYPE; ++x) { predits += conf[x][k]; reels += conf[k][x]; }
             double prec = predits == 0 ? 0 : 100.0 * tp / predits;
             double rapp = reels   == 0 ? 0 : 100.0 * tp / reels;
-            sommePrecision += prec; sommeRappel += rapp;
-            System.out.printf("  %-5s  precision=%.2f %%  rappel=%.2f %%%n", TYPE[k], prec, rapp);
+            sommePrecision += prec; sommecatched += rapp;
+            System.out.printf("  %-5s  precision=%.2f %%  catched=%.2f %%%n", TYPE[k], prec, rapp);
         }
         double precision = sommePrecision / NB_TYPE;
-        double rappel    = sommeRappel    / NB_TYPE;
+        double catched    = sommecatched    / NB_TYPE;
         System.out.printf("moyenne générale : %.2f %%%n", moyenne);
         System.out.printf("Precision générale : %.2f %%", precision);
-        System.out.printf("Rappel général : %.2f %%%n", rappel);
+        System.out.printf("catched général : %.2f %%%n", catched);
         System.out.println("===========================================");
 
         // print des resultats dans Results.md
         String type = "HOG Miroir";
         String neurone = "NeuroneSigmoide x" + NB_TYPE;
         enregistreResultats(type, neurone, nbImagesTrain, totalIterations, ETA, MSE_LIMITE,
-                            moyenne, precision, rappel);
+                            moyenne, precision, catched);
 
         // UI
         UserInterface.start(cheminsTest, neurones);
@@ -230,11 +230,11 @@ public class ChaineTraitImage
 
     static void enregistreResultats(String type, String neurone, int nbImagesTrain,
                                     int iterations, float eta, float mseLimite,
-                                    double moyenne, double precision, double rappel) {
+                                    double moyenne, double precision, double catched) {
         final String chemin = "../Rapport/Results.md";
         final String entete =
             "# Resultats des executions\n\n" +
-            "| id | date | type | neurone | images_train | iterations | eta | mse_limite | moyenne (%) | precision (%) | rappel (%) |\n" +
+            "| id | date | type | neurone | images_train | iterations | eta | mse_limite | moyenne (%) | precision (%) | catched (%) |\n" +
             "|----|------|------|---------|--------------|------------|-----|------------|--------------|---------------|------------|\n";
         try {
             java.io.File f = new java.io.File(chemin);
@@ -263,7 +263,7 @@ public class ChaineTraitImage
                 w.write(String.format(java.util.Locale.US,
                     "| %d | %s | %s | %s | %d | %d | %.4f | %.3f | %.2f | %.2f | %.2f |%n",
                     prochainId, date, type, neurone, nbImagesTrain, iterations,
-                    eta, mseLimite, moyenne, precision, rappel));
+                    eta, mseLimite, moyenne, precision, catched));
             }
             System.out.printf("Resultats ajoutes a %s (id=%d)%n", chemin, prochainId);
         } catch (java.io.IOException e) {
