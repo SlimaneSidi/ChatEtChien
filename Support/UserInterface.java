@@ -1,6 +1,5 @@
 import javax.swing.*;
 import java.awt.*;
-import java.io.File;
 import java.util.List;
 import java.util.Random;
 
@@ -54,20 +53,20 @@ public class UserInterface extends JFrame {
         labelImage.setIcon(new ImageIcon(imgRedimensionnee));
 
         // Détermination de la vraie classe pour vérification visuelle humaine
-        int classeReelle = ChaineTraitImage.classeReelle(cheminAleatoire);
-        String reelTexte = ChaineTraitImage.CLASSES[classeReelle];
+        int typeReel = ChaineTraitImage.typeReel(cheminAleatoire);
+        String reelTexte = ChaineTraitImage.TYPE[typeReel];
 
         // Traitement du signal : classe predite = argmax des 3 neurones
-        Image imageJava = new Image(cheminAleatoire, classeReelle, false);
+        Image imageJava = new Image(cheminAleatoire, typeReel, false);
         float[] entreesNormalisees = ChaineTraitImage.normalise(imageJava.donnees());
 
-        int predit = ChaineTraitImage.predictionClasse(neurones, entreesNormalisees);
+        int predit = ChaineTraitImage.predictionType(neurones, entreesNormalisees);
         neurones[predit].metAJour(entreesNormalisees); // recupere le score du neurone gagnant
         float score = neurones[predit].sortie();
-        String preditTexte = ChaineTraitImage.CLASSES[predit];
+        String preditTexte = ChaineTraitImage.TYPE[predit];
 
-        // Verdict : vert si la prediction est correcte, rouge sinon
-        boolean correct = (predit == classeReelle);
+        // vert = juste, rouge = faux
+        boolean correct = (predit == typeReel);
         labelVerdict.setText(preditTexte.toUpperCase()
             + " (score " + String.format("%.2f", score) + " | reel: " + reelTexte + ")");
         labelVerdict.setForeground(correct ? new Color(34, 139, 34) : Color.RED);
