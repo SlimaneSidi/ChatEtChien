@@ -13,7 +13,7 @@
 
 **ChatEtChien** est un projet transversal combinant **Intelligence Artificielle, Java et Traitement du Signal (THS)**, réalisé dans le cadre du cycle ingénieur à l'**ISEN Méditerranée**.
 
-L'objectif principal de ce projet est de concevoir, implémenter et entraîner un **réseau de neurones artificiels (perceptron) entièrement. 
+L'objectif principal de ce projet est de concevoir, implémenter et entraîner un **réseau de neurones artificiels (perceptron)** entièrement. 
 
 Ce dépôt comprend notre implémentation qui permet de classifier et différencier de manière autonome des images de **chats**, de **chiens**, mais également dans le cadre de nos extensions de recherche d'**animaux sauvages (wild)**.
 
@@ -26,7 +26,7 @@ Une collaboration menée par :
 * **Robin NULLANS**
 * **Guillaume BEDMAR**
 * **Benjamin L'HOMME**
-* **Maelys BERNARD**
+* **Mayliss BERNARD**
 
 ---
 
