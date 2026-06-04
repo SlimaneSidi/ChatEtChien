@@ -1,12 +1,3 @@
-/* ==================== COULEURS ====================
-   #001f65 (bleu très foncé)
-   #1a3a8c (bleu foncé)
-   #2c4f9e (bleu moyen)
-   #4a72b8 (bleu clair)
-   #6895fd (bleu clair)
-   #f0f4ff (bleu très clair pour fonds)
-================================================ */
-
 /* ==================== WELCOME PAGE ==================== */
 
 .welcome-root {
@@ -562,6 +553,30 @@
     -fx-background-insets: 0;
 }
 
+/* Barre Wild */
+.wild-bar > .track {
+    -fx-background-color: #f5ecd7;
+    -fx-background-radius: 4;
+}
+.wild-bar > .bar {
+    -fx-background-color: linear-gradient(to right, #7c5c2e, #c4a265);
+    -fx-background-radius: 4;
+    -fx-background-insets: 0;
+}
+
+/* Badge confiance faible */
+.low-confidence-badge {
+    -fx-background-color: #fef3c7;
+    -fx-text-fill: #92400e;
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-padding: 4 12;
+    -fx-background-radius: 15;
+    -fx-border-color: #fcd34d;
+    -fx-border-radius: 15;
+    -fx-border-width: 1;
+}
+
 /* --- PLACEHOLDER RÉSULTAT --- */
 .result-placeholder {
     -fx-background-color: #f8f9ff;
@@ -766,4 +781,180 @@
 
 .captcha-button:pressed {
     -fx-background-color: rgba(104,149,253,0.4);
+}
+
+/* ══════════════ CAPTCHA OVERLAY ══════════════ */
+
+.captcha-overlay {
+    -fx-background-color: transparent;
+}
+
+/* Fond sombre derrière la carte */
+.captcha-backdrop {
+    -fx-background-color: rgba(0, 15, 50, 0.65);
+}
+
+/* Carte principale */
+.captcha-root {
+    -fx-background-color: white;
+    -fx-background-radius: 14;
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.5), 30, 0, 0, 10);
+}
+
+/* Header */
+.captcha-title {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #001f65;
+}
+
+.captcha-version {
+    -fx-font-size: 11px;
+    -fx-text-fill: #4a72b8;
+    -fx-font-style: italic;
+}
+
+/* Bouton fermer ✕ */
+.captcha-close-btn {
+    -fx-font-size: 16px;
+    -fx-text-fill: #9ca3af;
+    -fx-cursor: hand;
+    -fx-padding: 4 8;
+    -fx-background-radius: 50;
+}
+
+.captcha-close-btn:hover {
+    -fx-text-fill: #ef4444;
+    -fx-background-color: #fee2e2;
+}
+
+/* Instruction */
+.captcha-main-title {
+    -fx-font-size: 15px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #1a1a2e;
+}
+
+.captcha-instruction {
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #001f65;
+}
+
+.captcha-hint {
+    -fx-font-size: 11px;
+    -fx-text-fill: #9ca3af;
+    -fx-font-style: italic;
+}
+
+/* Status */
+.captcha-status {
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #ef4444;
+}
+
+/* Barre robot */
+.robot-label {
+    -fx-font-size: 12px;
+    -fx-font-weight: bold;
+    -fx-text-fill: #4a72b8;
+}
+
+.attempts-label {
+    -fx-font-size: 12px;
+    -fx-text-fill: #6b7280;
+}
+
+.robot-bar > .track {
+    -fx-background-color: #f0f4ff;
+    -fx-background-radius: 6;
+}
+
+.robot-bar > .bar {
+    -fx-background-color: linear-gradient(to right, #10b981, #ef4444);
+    -fx-background-radius: 6;
+    -fx-background-insets: 0;
+}
+
+/* Bouton valider */
+.captcha-verify-btn {
+    -fx-background-color: linear-gradient(to right, #001f65, #4a72b8);
+    -fx-text-fill: white;
+    -fx-font-size: 14px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 8;
+    -fx-cursor: hand;
+    -fx-effect: dropshadow(gaussian, rgba(0,31,101,0.3), 6, 0, 0, 2);
+}
+
+.captcha-verify-btn:hover {
+    -fx-background-color: linear-gradient(to right, #001550, #1a3a8c);
+}
+
+.captcha-verify-btn:pressed {
+    -fx-scale-x: 0.97;
+    -fx-scale-y: 0.97;
+}
+
+/* Bouton nouvelle grille */
+.captcha-refresh-btn {
+    -fx-background-color: #f0f4ff;
+    -fx-text-fill: #1a3a8c;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 8;
+    -fx-cursor: hand;
+    -fx-border-color: #b0c4ff;
+    -fx-border-radius: 8;
+    -fx-border-width: 1;
+}
+
+.captcha-refresh-btn:hover {
+    -fx-background-color: #dde6ff;
+}
+
+/* Grille */
+.captcha-grid {
+    -fx-padding: 5;
+}
+
+/* Texte légal */
+.captcha-legal {
+    -fx-font-size: 10px;
+    -fx-text-fill: #d1d5db;
+    -fx-font-style: italic;
+}
+
+.mini-game-button {
+    -fx-background-color: linear-gradient(to right, #7c5c2e, #c4a265);
+    -fx-text-fill: white;
+    -fx-font-size: 13px;
+    -fx-font-weight: bold;
+    -fx-background-radius: 18;
+    -fx-padding: 6 14;
+    -fx-cursor: hand;
+}
+
+.mini-game-button:hover {
+    -fx-background-color: linear-gradient(to right, #6a4e25, #b3945a);
+}
+/* ==================== PANNEAU DROIT FIXE ==================== */
+
+/* ScrollPane invisible : pas de bordure, fond transparent */
+.right-scroll {
+    -fx-background-color: white;
+    -fx-border-color: transparent;
+    -fx-background-insets: 0;
+    -fx-padding: 0;
+}
+
+.right-scroll > .viewport {
+    -fx-background-color: white;
+}
+
+/* On s'assure que right-panel ne déborde pas du ScrollPane */
+.right-panel {
+    -fx-min-width: 340;
+    -fx-max-width: 360;
 }

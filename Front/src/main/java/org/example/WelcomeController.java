@@ -1,6 +1,12 @@
 package org.example;
 
-import javafx.animation.*;
+import javafx.animation.Animation;
+import javafx.animation.FadeTransition;
+import javafx.animation.Interpolator;
+import javafx.animation.ParallelTransition;
+import javafx.animation.RotateTransition;
+import javafx.animation.ScaleTransition;
+import javafx.animation.TranslateTransition;
 import javafx.fxml.FXML;
 import javafx.scene.control.Label;
 import javafx.scene.layout.VBox;
@@ -32,7 +38,6 @@ public class WelcomeController {
 
     // Animation d'entrée générale
     private void animateEntrance() {
-        // Container principal
         mainContainer.setOpacity(0);
         mainContainer.setTranslateY(30);
 
@@ -48,7 +53,6 @@ public class WelcomeController {
         entrance.setDelay(Duration.millis(200));
         entrance.play();
 
-        // Titre avec délai
         titleLabel.setOpacity(0);
         FadeTransition titleFade = new FadeTransition(Duration.millis(800), titleLabel);
         titleFade.setFromValue(0);
@@ -56,7 +60,6 @@ public class WelcomeController {
         titleFade.setDelay(Duration.millis(600));
         titleFade.play();
 
-        // Sous-titre avec délai
         subtitleLabel.setOpacity(0);
         FadeTransition subFade = new FadeTransition(Duration.millis(800), subtitleLabel);
         subFade.setFromValue(0);
@@ -64,7 +67,6 @@ public class WelcomeController {
         subFade.setDelay(Duration.millis(1000));
         subFade.play();
 
-        // Description avec délai
         descriptionLabel.setOpacity(0);
         FadeTransition descFade = new FadeTransition(Duration.millis(800), descriptionLabel);
         descFade.setFromValue(0);
@@ -72,7 +74,6 @@ public class WelcomeController {
         descFade.setDelay(Duration.millis(1400));
         descFade.play();
 
-        // Bouton start avec délai
         startLabel.setOpacity(0);
         FadeTransition startFade = new FadeTransition(Duration.millis(800), startLabel);
         startFade.setFromValue(0);
@@ -81,7 +82,6 @@ public class WelcomeController {
         startFade.play();
     }
 
-    // Animation des emojis chat/chien
     private void animateEmojis() {
         animateBounce(catEmoji, 0);
         animateBounce(dogEmoji, 200);
@@ -107,7 +107,6 @@ public class WelcomeController {
         bounce.play();
     }
 
-    // Animation des cercles décoratifs (flottement)
     private void animateFloatingCircles() {
         animateCircle(circle1, 0, 3000);
         animateCircle(circle2, 1000, 4000);
@@ -116,14 +115,12 @@ public class WelcomeController {
     }
 
     private void animateCircle(Circle circle, int delayMs, int durationMs) {
-        // Rotation + opacité
         FadeTransition fade = new FadeTransition(Duration.millis(2000), circle);
         fade.setFromValue(0);
         fade.setToValue(0.3);
         fade.setDelay(Duration.millis(delayMs));
         fade.play();
 
-        // Flottement vertical
         TranslateTransition float1 = new TranslateTransition(Duration.millis(durationMs), circle);
         float1.setFromY(0);
         float1.setToY(-30);
@@ -132,7 +129,6 @@ public class WelcomeController {
         float1.setInterpolator(Interpolator.EASE_BOTH);
         float1.play();
 
-        // Rotation
         RotateTransition rotate = new RotateTransition(Duration.millis(durationMs * 2L), circle);
         rotate.setFromAngle(0);
         rotate.setToAngle(360);
@@ -140,7 +136,6 @@ public class WelcomeController {
         rotate.play();
     }
 
-    // Animation pulsation du bouton "Démarrer"
     private void animatePulseStart() {
         ScaleTransition pulse = new ScaleTransition(Duration.millis(900), startLabel);
         pulse.setFromX(1.0);
@@ -157,7 +152,6 @@ public class WelcomeController {
     // Clic sur "Démarrer" -> transition vers l'analyse
     @FXML
     private void handleStart() {
-        // Animation de sortie avant de changer de page
         FadeTransition fadeOut = new FadeTransition(Duration.millis(500), mainContainer);
         fadeOut.setFromValue(1);
         fadeOut.setToValue(0);

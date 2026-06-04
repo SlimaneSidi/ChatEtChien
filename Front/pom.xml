@@ -14,18 +14,28 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
+        <javafx.version>19</javafx.version>
     </properties>
 
     <dependencies>
+        <!-- JavaFX de base -->
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-controls</artifactId>
-            <version>19</version>
+            <version>${javafx.version}</version>
         </dependency>
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-fxml</artifactId>
-            <version>19</version>
+            <version>${javafx.version}</version>
+        </dependency>
+
+        <!-- Nécessaire pour SwingFXUtils (conversion BufferedImage <-> Image JavaFX)
+             utilisé dans AIEngine et CaptchaController pour charger les vraies images -->
+        <dependency>
+            <groupId>org.openjfx</groupId>
+            <artifactId>javafx-swing</artifactId>
+            <version>${javafx.version}</version>
         </dependency>
     </dependencies>
 
@@ -44,6 +54,14 @@
                     <mainClass>org.example.MainApp</mainClass>
                 </configuration>
             </plugin>
+            <plugin>
+    <groupId>org.openjfx</groupId>
+    <artifactId>javafx-maven-plugin</artifactId>
+    <version>0.0.8</version>
+    <configuration>
+        <mainClass>org.example.Launcher</mainClass>
+    </configuration>
+</plugin>
         </plugins>
     </build>
 </project>

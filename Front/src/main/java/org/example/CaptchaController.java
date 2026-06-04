@@ -1,413 +1,346 @@
 package org.example;
 
-import javafx.animation.*;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
+
+import javafx.animation.ScaleTransition;
+import javafx.animation.TranslateTransition;
 import javafx.fxml.FXML;
-import javafx.scene.control.*;
-import javafx.scene.image.*;
-import javafx.scene.layout.*;
-import javafx.stage.Stage;
-import javafx.util.Duration;
+import javafx.geometry.Pos;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.ProgressBar;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
-
-import java.util.*;
+import javafx.scene.layout.GridPane;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
+import javafx.stage.Stage;
+import javafx.util.Duration;
 
 public class CaptchaController {
 
+    // ── FXML ──────────────────────────────────────────────────────────────
     @FXML private VBox mainContainer;
-    @FXML private Label titleLabel;
-    @FXML private Label instructionLabel;
+    @FXML private Label titleLabel, instructionLabel, statusLabel, attemptsLabel, robotLabel;
     @FXML private GridPane imageGrid;
     @FXML private Button verifyBtn;
-    @FXML private Label statusLabel;
-    @FXML private Label attemptsLabel;
     @FXML private ProgressBar robotBar;
-    @FXML private Label robotLabel;
 
-    // Emojis simulant des images de chats et chiens
-    private static final String[] CAT_EMOJIS = {"🐱", "😺", "😸", "🐈", "😹", "😻"};
-    private static final String[] DOG_EMOJIS = {"🐶", "🐕", "🦮", "🐩", "😀", "🐕‍🦺"};
+    // ── Configuration ─────────────────────────────────────────────────────
+    private static final String DATASET_DIR = "src/main/dataset_groupe_9/test";
+    private static final int MAX_ATTEMPTS = 3;
 
-    // Ce qu'on demande à l'utilisateur de cliquer
-    private String targetType; // "chat" ou "chien"
-    private List<CaptchaCell> cells = new ArrayList<>();
+    // ── Données en cache ──────────────────────────────────────────────────
+    private static final List<String> catPaths = new ArrayList<>();
+    private static final List<String> dogPaths = new ArrayList<>();
+    private static final List<String> wildPaths = new ArrayList<>();
+    private static boolean isDatasetLoaded = false;
+
+    // ── État de la partie ─────────────────────────────────────────────────
+    private String targetType;
     private int attempts = 0;
-    private int maxAttempts = 3;
-    private boolean captchaSolved = false;
+    private boolean isSolved = false;
+    private final List<CaptchaCell> cells = new ArrayList<>();
+
+    // ══════════════════════════════════════════════════════════════════════
+    //  INITIALISATION
+    // ══════════════════════════════════════════════════════════════════════
 
     @FXML
     public void initialize() {
-        generateCaptcha();
-        animateEntrance();
-
-        // Easter egg : si l'utilisateur appuie sur Échap
+        mainContainer.setFocusTraversable(true);
         mainContainer.setOnKeyPressed(this::handleKeyPress);
+
+        animateEntrance();
+        loadDatasetPaths();
+        generateGrid();
     }
 
-    // =================== GÉNÉRATION ===================
+    private void loadDatasetPaths() {
+        if (isDatasetLoaded) return;
 
-    private void generateCaptcha() {
-        // Choisir aléatoirement ce qu'on demande
-        targetType = Math.random() > 0.5 ? "chat" : "chien";
-        updateInstruction();
+        File root = new File(DATASET_DIR);
+        if (root.exists()) {
+            scanDirectory(root);
+        } else {
+            System.err.println("⚠️ Dataset introuvable : " + root.getAbsolutePath());
+        }
+        isDatasetLoaded = true;
+    }
 
-        // Générer la grille 3x3
+    private void scanDirectory(File dir) {
+        File[] files = dir.listFiles();
+        if (files == null) return;
+
+        for (File f : files) {
+            if (f.isDirectory()) {
+                scanDirectory(f);
+            } else {
+                String path = f.getAbsolutePath();
+                String lower = path.toLowerCase();
+                if (!lower.endsWith(".jpg") && !lower.endsWith(".png") && !lower.endsWith(".jpeg")) continue;
+
+                String folderName = f.getParentFile().getName().toLowerCase();
+
+                if (folderName.contains("cat") || folderName.contains("chat")) {
+                    catPaths.add(path);
+                } else if (folderName.contains("dog") || folderName.contains("chien")) {
+                    dogPaths.add(path);
+                } else {
+                    wildPaths.add(path);
+                }
+            }
+        }
+    }
+
+    // Fonction utilitaire pour retrouver la catégorie stricte d'une image
+    private String getCategory(String path) {
+        if (catPaths.contains(path)) return "chat";
+        if (dogPaths.contains(path)) return "chien";
+        return "wild";
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    //  GÉNÉRATION DU CAPTCHA
+    // ══════════════════════════════════════════════════════════════════════
+
+    private void generateGrid() {
         imageGrid.getChildren().clear();
         cells.clear();
+        statusLabel.setText("");
 
-        // Créer 9 cellules avec un mélange de chats/chiens
-        List<String> emojis = new ArrayList<>();
+        String[] types = {"chat", "chien", "wild"};
+        targetType = types[new Random().nextInt(3)];
 
-        // Garantir au moins 2-3 images de la cible
-        int targetCount = 2 + (int)(Math.random() * 3);
+        String texteCible = switch (targetType) {
+            case "chat" -> "🐱 CHATS";
+            case "chien" -> "🐶 CHIENS";
+            default -> "🦁 ANIMAUX SAUVAGES";
+        };
+        instructionLabel.setText("Cliquez sur toutes les images de " + texteCible);
+
+        List<String> poolCible = new ArrayList<>();
+        List<String> poolAutres = new ArrayList<>();
+
+        if (targetType.equals("chat")) {
+            poolCible.addAll(catPaths);
+            poolAutres.addAll(dogPaths);
+            poolAutres.addAll(wildPaths);
+        } else if (targetType.equals("chien")) {
+            poolCible.addAll(dogPaths);
+            poolAutres.addAll(catPaths);
+            poolAutres.addAll(wildPaths);
+        } else {
+            poolCible.addAll(wildPaths);
+            poolAutres.addAll(catPaths);
+            poolAutres.addAll(dogPaths);
+        }
+
+        Random rnd = new Random();
+        int targetCount = 3 + rnd.nextInt(2);
         int otherCount = 9 - targetCount;
 
-        String[] targetArray = targetType.equals("chat") ? CAT_EMOJIS : DOG_EMOJIS;
-        String[] otherArray = targetType.equals("chat") ? DOG_EMOJIS : CAT_EMOJIS;
+        List<CellData> gridData = new ArrayList<>();
 
-        for (int i = 0; i < targetCount; i++)
-            emojis.add(targetArray[(int)(Math.random() * targetArray.length)] + "|target");
-        for (int i = 0; i < otherCount; i++)
-            emojis.add(otherArray[(int)(Math.random() * otherArray.length)] + "|other");
+        List<String> pickedTargets = pickDistinctRandom(poolCible, targetCount, rnd);
+        for (String path : pickedTargets) {
+            gridData.add(new CellData(targetType, path));
+        }
 
-        // Mélanger
-        Collections.shuffle(emojis);
+        List<String> pickedOthers = pickDistinctRandom(poolAutres, otherCount, rnd);
+        for (String path : pickedOthers) {
+            gridData.add(new CellData(getCategory(path), path));
+        }
 
-        // Placer dans la grille
-        for (int i = 0; i < 9; i++) {
-            String[] parts = emojis.get(i).split("\\|");
-            String emoji = parts[0];
-            boolean isTarget = parts[1].equals("target");
+        Collections.shuffle(gridData, rnd);
 
-            CaptchaCell cell = new CaptchaCell(emoji, isTarget);
+        for (int i = 0; i < gridData.size(); i++) {
+            CaptchaCell cell = new CaptchaCell(gridData.get(i));
             cells.add(cell);
             imageGrid.add(cell.getPane(), i % 3, i / 3);
         }
     }
 
-    private void updateInstruction() {
-        String animal = targetType.equals("chat") ? "🐱 CHATS" : "🐶 CHIENS";
-        instructionLabel.setText("Cliquez sur toutes les images de " + animal);
+    private List<String> pickDistinctRandom(List<String> pool, int count, Random rnd) {
+        List<String> result = new ArrayList<>();
+        if (pool == null || pool.isEmpty()) return result;
+
+        List<String> copy = new ArrayList<>(pool);
+        for (int i = 0; i < count && !copy.isEmpty(); i++) {
+            result.add(copy.remove(rnd.nextInt(copy.size())));
+        }
+        return result;
     }
 
-    // =================== VÉRIFICATION ===================
+    // ══════════════════════════════════════════════════════════════════════
+    //  ACTIONS ET VÉRIFICATION
+    // ══════════════════════════════════════════════════════════════════════
 
     @FXML
     private void handleVerify() {
-        if (captchaSolved) {
-            closeWindow();
-            return;
-        }
+        if (isSolved) { closeWindow(); return; }
 
         attempts++;
-        attemptsLabel.setText("Tentative " + attempts + "/" + maxAttempts);
+        attemptsLabel.setText(attempts + " / " + MAX_ATTEMPTS + " tentatives");
 
-        // Vérifier les sélections
-        boolean allTargetsSelected = true;
-        boolean noFalsePositive = true;
-        int correctCount = 0;
-        int wrongCount = 0;
+        boolean success = true;
+        int wrongClicks = 0;
 
         for (CaptchaCell cell : cells) {
-            if (cell.isTarget() && !cell.isSelected()) {
-                allTargetsSelected = false;
-            }
-            if (!cell.isTarget() && cell.isSelected()) {
-                noFalsePositive = false;
-                wrongCount++;
-            }
-            if (cell.isTarget() && cell.isSelected()) {
-                correctCount++;
-            }
+            boolean isTarget = cell.trueType.equals(targetType);
+            if (isTarget && !cell.isSelected) success = false;
+            if (!isTarget && cell.isSelected) { success = false; wrongClicks++; }
         }
 
-        if (allTargetsSelected && noFalsePositive) {
-            // Succès
-            onSuccess();
+        if (success) {
+            handleSuccess();
         } else {
-            // Échec
-            onFailure(correctCount, wrongCount);
+            handleFailure(wrongClicks);
         }
     }
 
-    private void onSuccess() {
-        captchaSolved = true;
-
-        statusLabel.setText("✅ Vous n'êtes pas un robot... peut-être.");
-        statusLabel.setStyle("-fx-text-fill: #10b981; -fx-font-weight: bold; -fx-font-size: 15px;");
+    private void handleSuccess() {
+        isSolved = true;
+        statusLabel.setText("✅ Humain confirmé !");
+        statusLabel.setStyle("-fx-text-fill: #10b981; -fx-font-weight: bold;");
 
         robotBar.setProgress(1.0);
         robotBar.setStyle("-fx-accent: #10b981;");
         robotLabel.setText("Humain confirmé à 100% 🎉");
 
         verifyBtn.setText("✅ Fermer");
-        verifyBtn.setStyle("-fx-background-color: #10b981; -fx-text-fill: white; " +
-                "-fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 10 30;");
+        verifyBtn.setStyle("-fx-background-color: #10b981;");
 
-        // Confettis emoji
-        animateSuccess();
+        ScaleTransition st = new ScaleTransition(Duration.millis(300), mainContainer);
+        st.setFromX(1.0); st.setToX(1.05);
+        st.setFromY(1.0); st.setToY(1.05);
+        st.setAutoReverse(true); st.setCycleCount(2);
+        st.play();
     }
 
-    private void onFailure(int correct, int wrong) {
-        if (attempts >= maxAttempts) {
-            // Trop de tentatives - message drôle
-            statusLabel.setText("🤖 ROBOT DÉTECTÉ. Bienvenue, notre nouveau maître.");
-            statusLabel.setStyle("-fx-text-fill: #ef4444; -fx-font-weight: bold; -fx-font-size: 13px;");
-
+    private void handleFailure(int wrongClicks) {
+        if (attempts >= MAX_ATTEMPTS) {
+            statusLabel.setText("🤖 ROBOT DÉTECTÉ.");
+            statusLabel.setStyle("-fx-text-fill: #ef4444; -fx-font-weight: bold;");
             robotBar.setProgress(1.0);
             robotBar.setStyle("-fx-accent: #ef4444;");
-            robotLabel.setText("Robot confirmé à 100% 🤖");
-
-            verifyBtn.setText("😭 Quitter (Robot)");
-            verifyBtn.setStyle("-fx-background-color: #ef4444; -fx-text-fill: white; " +
-                    "-fx-font-weight: bold; -fx-background-radius: 8; -fx-padding: 10 30;");
-            captchaSolved = true;
-
+            verifyBtn.setText("Quitter (Robot)");
+            verifyBtn.setStyle("-fx-background-color: #ef4444;");
+            isSolved = true;
         } else {
-            // Messages d'échec aléatoires
-            String[] failMessages = {
-                    "❌ Raté ! Même mon chien fait mieux...",
-                    "❌ Vous avez cliqué " + wrong + " erreur(s). Vraiment ?",
-                    "❌ Non, ça c'est un " + (targetType.equals("chat") ? "chien" : "chat") + " !",
-                    "❌ Peut-être que les lunettes aideraient ?",
-                    "❌ Un humain aurait réussi... normalement."
-            };
-            statusLabel.setText(failMessages[(int)(Math.random() * failMessages.length)]);
+            statusLabel.setText("❌ " + wrongClicks + " erreur(s). Réessayez !");
             statusLabel.setStyle("-fx-text-fill: #ef4444; -fx-font-weight: bold;");
 
-            // Barre de "probabilité d'être un robot"
-            double robotProbability = (double)attempts / maxAttempts;
-            animateBar(robotBar, robotProbability);
-            robotLabel.setText("Probabilité d'être un robot : " +
-                    String.format("%.0f%%", robotProbability * 100));
+            robotBar.setProgress((double) attempts / MAX_ATTEMPTS);
 
-            // Régénérer le captcha avec animation shake
-            shakeGrid();
-            PauseTransition pause = new PauseTransition(Duration.millis(600));
-            pause.setOnFinished(e -> {
-                generateCaptcha();
-                statusLabel.setText("Nouvelle tentative, faites attention !");
-                statusLabel.setStyle("-fx-text-fill: #f59e0b; -fx-font-weight: bold;");
-            });
-            pause.play();
+            TranslateTransition tt = new TranslateTransition(Duration.millis(50), imageGrid);
+            tt.setFromX(-10); tt.setToX(10);
+            tt.setCycleCount(6); tt.setAutoReverse(true);
+            tt.setOnFinished(e -> generateGrid());
+            tt.play();
         }
     }
 
-    // =================== ANIMATIONS ===================
-
-    private void animateEntrance() {
-        mainContainer.setOpacity(0);
-        mainContainer.setTranslateY(-20);
-        mainContainer.setScaleX(0.9);
-        mainContainer.setScaleY(0.9);
-
-        ParallelTransition entrance = new ParallelTransition(
-                createFade(mainContainer, 0, 1, 400),
-                createSlide(mainContainer, -20, 0, 400),
-                createScale(mainContainer, 0.9, 1.0, 400)
-        );
-        entrance.play();
-    }
-
-    private void animateSuccess() {
-        // Flash vert
-        FadeTransition flash = new FadeTransition(Duration.millis(200), mainContainer);
-        flash.setFromValue(0.7);
-        flash.setToValue(1.0);
-        flash.setCycleCount(3);
-        flash.play();
-
-        // Bounce
-        ScaleTransition bounce = new ScaleTransition(Duration.millis(300), mainContainer);
-        bounce.setFromX(1.0);
-        bounce.setFromY(1.0);
-        bounce.setToX(1.05);
-        bounce.setToY(1.05);
-        bounce.setAutoReverse(true);
-        bounce.setCycleCount(2);
-        bounce.play();
-    }
-
-    private void shakeGrid() {
-        TranslateTransition shake = new TranslateTransition(Duration.millis(80), imageGrid);
-        shake.setFromX(0);
-        shake.setToX(12);
-        shake.setCycleCount(6);
-        shake.setAutoReverse(true);
-        shake.play();
-    }
-
-    private void animateBar(ProgressBar bar, double target) {
-        Timeline tl = new Timeline(new KeyFrame(Duration.millis(500),
-                new KeyValue(bar.progressProperty(), target, Interpolator.EASE_BOTH)));
-        tl.play();
-    }
-
-    private FadeTransition createFade(javafx.scene.Node node, double from, double to, int ms) {
-        FadeTransition ft = new FadeTransition(Duration.millis(ms), node);
-        ft.setFromValue(from);
-        ft.setToValue(to);
-        return ft;
-    }
-
-    private TranslateTransition createSlide(javafx.scene.Node node, double from, double to, int ms) {
-        TranslateTransition tt = new TranslateTransition(Duration.millis(ms), node);
-        tt.setFromY(from);
-        tt.setToY(to);
-        return tt;
-    }
-
-    private ScaleTransition createScale(javafx.scene.Node node, double from, double to, int ms) {
-        ScaleTransition st = new ScaleTransition(Duration.millis(ms), node);
-        st.setFromX(from);
-        st.setFromY(from);
-        st.setToX(to);
-        st.setToY(to);
-        return st;
-    }
-
-    // =================== EASTER EGGS ===================
+    @FXML private void handleRefresh() { generateGrid(); }
+    @FXML private void handleClose() { closeWindow(); }
+    @FXML private void handleBackdropClick() { closeWindow(); }
 
     private void handleKeyPress(KeyEvent event) {
-        // Échap = message drôle
-        if (event.getCode() == KeyCode.ESCAPE) {
-            statusLabel.setText("😏 On ne fuit pas un CAPTCHA comme ça !");
-            statusLabel.setStyle("-fx-text-fill: #f59e0b; -fx-font-weight: bold;");
-        }
-        // Entrée = soumettre
-        if (event.getCode() == KeyCode.ENTER) {
-            handleVerify();
-        }
+        if (event.getCode() == KeyCode.ESCAPE) closeWindow();
+        if (event.getCode() == KeyCode.ENTER) handleVerify();
     }
-
-    // =================== FERMETURE ===================
 
     private void closeWindow() {
         Stage stage = (Stage) mainContainer.getScene().getWindow();
-
-        FadeTransition ft = new FadeTransition(Duration.millis(300), mainContainer);
-        ft.setFromValue(1);
-        ft.setToValue(0);
-        ft.setOnFinished(e -> stage.close());
-        ft.play();
+        stage.close();
     }
 
-    // =================== CLASSE INTERNE CELLULE ===================
+    private void animateEntrance() {
+        ScaleTransition st = new ScaleTransition(Duration.millis(300), mainContainer);
+        st.setFromX(0.8); st.setToX(1.0);
+        st.setFromY(0.8); st.setToY(1.0);
+        st.play();
+    }
 
-    public static class CaptchaCell {
+    // ══════════════════════════════════════════════════════════════════════
+    //  CLASSE INTERNE : CELLULE DU CAPTCHA
+    // ══════════════════════════════════════════════════════════════════════
+
+    private record CellData(String trueType, String path) {}
+
+    private class CaptchaCell {
         private final StackPane pane;
-        private final Label emojiLabel;
-        private final boolean isTarget;
-        private boolean selected = false;
+        private final String trueType;
+        private boolean isSelected = false;
+        private final Label checkmark;
 
-        public CaptchaCell(String emoji, boolean isTarget) {
-            this.isTarget = isTarget;
+        public CaptchaCell(CellData data) {
+            this.trueType = data.trueType();
+            this.pane = new StackPane();
+            this.pane.setPrefSize(108, 108);
+            this.pane.setStyle("-fx-background-color: white; -fx-border-color: #dde6ff; -fx-border-width: 2; -fx-border-radius: 8; -fx-cursor: hand;");
 
-            // Emoji label
-            emojiLabel = new Label(emoji);
-            emojiLabel.setStyle("-fx-font-size: 40px;");
+            ImageView imgView = new ImageView();
+            imgView.setFitWidth(96);
+            imgView.setFitHeight(96);
+            if (data.path() != null) {
+                imgView.setImage(new Image(new File(data.path()).toURI().toString(), 96, 96, false, true, false));
+            }
 
-            // Container
-            pane = new StackPane(emojiLabel);
-            pane.setPrefSize(100, 100);
-            pane.setStyle(
-                    "-fx-background-color: white;" +
-                            "-fx-border-color: #dde6ff;" +
-                            "-fx-border-width: 2;" +
-                            "-fx-border-radius: 8;" +
-                            "-fx-background-radius: 8;" +
-                            "-fx-cursor: hand;"
-            );
+            checkmark = new Label("✓");
+            checkmark.setStyle("-fx-font-size: 20px; -fx-text-fill: #001f65; -fx-font-weight: bold; -fx-background-color: rgba(255,255,255,0.85); -fx-background-radius: 50; -fx-padding: 2 6;");
+            StackPane.setAlignment(checkmark, Pos.TOP_RIGHT);
+            checkmark.setVisible(false);
 
-            // Hover
-            pane.setOnMouseEntered(e -> {
-                if (!selected) {
-                    pane.setStyle(
-                            "-fx-background-color: #f0f4ff;" +
-                                    "-fx-border-color: #4a72b8;" +
-                                    "-fx-border-width: 2;" +
-                                    "-fx-border-radius: 8;" +
-                                    "-fx-background-radius: 8;" +
-                                    "-fx-cursor: hand;"
-                    );
-                    ScaleTransition st = new ScaleTransition(Duration.millis(150), pane);
-                    st.setToX(1.08);
-                    st.setToY(1.08);
-                    st.play();
-                }
-            });
-
-            pane.setOnMouseExited(e -> {
-                if (!selected) {
-                    pane.setStyle(
-                            "-fx-background-color: white;" +
-                                    "-fx-border-color: #dde6ff;" +
-                                    "-fx-border-width: 2;" +
-                                    "-fx-border-radius: 8;" +
-                                    "-fx-background-radius: 8;" +
-                                    "-fx-cursor: hand;"
-                    );
-                    ScaleTransition st = new ScaleTransition(Duration.millis(150), pane);
-                    st.setToX(1.0);
-                    st.setToY(1.0);
-                    st.play();
-                }
-            });
-
-            // Clic
+            pane.getChildren().addAll(imgView, checkmark);
             pane.setOnMouseClicked(e -> toggleSelection());
         }
 
         private void toggleSelection() {
-            selected = !selected;
+            isSelected = !isSelected;
+            checkmark.setVisible(isSelected);
+            pane.setStyle(isSelected
+                    ? "-fx-border-color: #001f65; -fx-border-width: 3; -fx-border-radius: 8; -fx-cursor: hand;"
+                    : "-fx-background-color: white; -fx-border-color: #dde6ff; -fx-border-width: 2; -fx-border-radius: 8; -fx-cursor: hand;");
 
-            if (selected) {
-                pane.setStyle(
-                        "-fx-background-color: #dde6ff;" +
-                                "-fx-border-color: #001f65;" +
-                                "-fx-border-width: 3;" +
-                                "-fx-border-radius: 8;" +
-                                "-fx-background-radius: 8;" +
-                                "-fx-cursor: hand;"
-                );
-
-                // Checkmark
-                Label check = new Label("✓");
-                check.setStyle(
-                        "-fx-font-size: 20px;" +
-                                "-fx-text-fill: #001f65;" +
-                                "-fx-font-weight: bold;"
-                );
-                check.setTranslateX(35);
-                check.setTranslateY(-35);
-                pane.getChildren().add(check);
-
-                // Animation
-                ScaleTransition st = new ScaleTransition(Duration.millis(200), pane);
-                st.setFromX(1.0);
-                st.setFromY(1.0);
-                st.setToX(0.95);
-                st.setToY(0.95);
-                st.setAutoReverse(true);
-                st.setCycleCount(2);
-                st.play();
-
-            } else {
-                pane.setStyle(
-                        "-fx-background-color: white;" +
-                                "-fx-border-color: #dde6ff;" +
-                                "-fx-border-width: 2;" +
-                                "-fx-border-radius: 8;" +
-                                "-fx-background-radius: 8;" +
-                                "-fx-cursor: hand;"
-                );
-                // Supprimer le checkmark
-                pane.getChildren().removeIf(n -> n instanceof Label && ((Label)n).getText().equals("✓"));
-            }
+            ScaleTransition st = new ScaleTransition(Duration.millis(100), pane);
+            st.setToX(isSelected ? 0.95 : 1.0);
+            st.setToY(isSelected ? 0.95 : 1.0);
+            st.play();
         }
 
         public StackPane getPane() { return pane; }
-        public boolean isTarget() { return isTarget; }
-        public boolean isSelected() { return selected; }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    //  MÉTHODES PUBLIQUES POUR LE MINI-JEU SWING (Remises comme à l'origine)
+    // ══════════════════════════════════════════════════════════════════════
+
+    public static List<String> collectAllImages(String path) {
+        List<String> images = new ArrayList<>();
+        File root = new File(path);
+        if (!root.exists()) return images;
+        scanDirFlat(root, images);
+        return images;
+    }
+
+    private static void scanDirFlat(File dir, List<String> images) {
+        File[] files = dir.listFiles();
+        if (files == null) return;
+        for (File f : files) {
+            if (f.isDirectory()) scanDirFlat(f, images);
+            else {
+                String lower = f.getName().toLowerCase();
+                if (lower.endsWith(".jpg") || lower.endsWith(".png") || lower.endsWith(".jpeg") || lower.endsWith(".bmp")) {
+                    images.add(f.getAbsolutePath());
+                }
+            }
+        }
     }
 }

@@ -1,113 +1,171 @@
 package org.example;
 
-import javafx.animation.*;
+import java.io.File;
+import java.util.List;
+
+import org.example.neurone.iNeurone;
+
+import javafx.animation.FadeTransition;
+import javafx.animation.Interpolator;
+import javafx.animation.KeyFrame;
+import javafx.animation.KeyValue;
+import javafx.animation.ParallelTransition;
+import javafx.animation.ScaleTransition;
+import javafx.animation.Timeline;
+import javafx.animation.TranslateTransition;
 import javafx.fxml.FXML;
-import javafx.scene.control.*;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
-import javafx.scene.input.Dragboard;
-import javafx.scene.input.TransferMode;
-import javafx.scene.layout.*;
-import javafx.stage.FileChooser;
-import javafx.util.Duration;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.ProgressBar;
+import javafx.scene.control.TextArea;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.input.Dragboard;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.TransferMode;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
+import javafx.stage.FileChooser;
 import javafx.stage.Modality;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyEvent;
-
-import java.io.File;
-import java.util.Random;
+import javafx.util.Duration;
 
 public class Controller {
 
-    // Drop zone
+    // ── Drop zone ──────────────────────────────────────────────────────────
     @FXML private StackPane dropZone;
-    @FXML private VBox dropHint;
+    @FXML private VBox      dropHint;
     @FXML private ImageView previewImage;
 
-    // Infos image
-    @FXML private HBox imageInfoBox;
+    // ── Infos image ────────────────────────────────────────────────────────
+    @FXML private HBox  imageInfoBox;
     @FXML private Label imageNameLabel;
     @FXML private Label imageSizeLabel;
     @FXML private Label imageWeightLabel;
 
-    // Boutons
+    // ── Boutons ────────────────────────────────────────────────────────────
     @FXML private Button analyzeBtn;
     @FXML private Button clearBtn;
 
-    // Résultat principal
-    @FXML private VBox resultPanel;
-    @FXML private VBox resultPlaceholder;
-    @FXML private Label resultEmoji;
-    @FXML private Label resultLabel;
+    // ── Résultat principal ─────────────────────────────────────────────────
+    @FXML private VBox        resultPanel;
+    @FXML private VBox        resultPlaceholder;
+    @FXML private Label       resultEmoji;
+    @FXML private Label       resultLabel;
+    @FXML private Label       lowConfidenceLabel;
     @FXML private ProgressBar confidenceBar;
-    @FXML private Label confidencePercent;
+    @FXML private Label       confidencePercent;
 
-    // Barres chat/chien
+    // ── Barres chat / chien / wild ─────────────────────────────────────────
     @FXML private ProgressBar catBar;
     @FXML private ProgressBar dogBar;
-    @FXML private Label catPercent;
-    @FXML private Label dogPercent;
+    @FXML private ProgressBar wildBar;
+    @FXML private Label       catPercent;
+    @FXML private Label       dogPercent;
+    @FXML private Label       wildPercent;
 
-    // Stats session
+    // ── Stats session ──────────────────────────────────────────────────────
     @FXML private Label totalAnalyses;
     @FXML private Label totalChats;
     @FXML private Label totalChiens;
+    @FXML private Label totalWild;
     @FXML private Label avgConfidence;
 
-    // Logs
+    // ── Logs ───────────────────────────────────────────────────────────────
     @FXML private TextArea logArea;
 
-    // Variables internes
-    private File selectedImageFile;
-    private int sessionTotal = 0;
-    private int sessionChats = 0;
-    private int sessionChiens = 0;
+    // ── Variables internes ─────────────────────────────────────────────────
+    private File   selectedImageFile;
+    private int    sessionTotal  = 0;
+    private int    sessionChats  = 0;
+    private int    sessionChiens = 0;
+    private int    sessionWild   = 0;
     private double sessionConfidenceSum = 0;
+
+    private static final double SEUIL_CONFIANCE = 0.55;
+
+    private static final String COLOR_CHAT    = "#4a72b8";
+    private static final String COLOR_CHIEN   = "#1a3a8c";
+    private static final String COLOR_WILD    = "#7c5c2e";
+    private static final String COLOR_INCONNU = "#6b7280";
+
+    // ══════════════════════════════════════════════════════════════════════
+    //  INITIALISATION
+    // ══════════════════════════════════════════════════════════════════════
 
     @FXML
     public void initialize() {
         setupDragAndDrop();
         resetUI();
-        addLog("✓ Application prête");
-        addLog("✓ Neurone chargé et opérationnel");
-        addLog("→ Glissez une image pour commencer");
-        addLog("💡 Astuce : Cliquez sur le bouton CAPTCHA 🔒");
 
+        // Chargement du moteur IA (singleton — utilise NeuroneSigmoide + Hog du back)
+        AIEngine engine = AIEngine.getInstance();
+        if (engine.isLoaded()) {
+            addLog("✅ Moteur IA chargé et prêt");
+        } else {
+            addLog("⚠️  Mode démo — neurones non chargés");
+        }
+        addLog("→ Glissez une image pour commencer");
+        addLog("💡 Appuyez sur [C] ou cliquez sur 🔒 CAPTCHA");
+
+        // Raccourci clavier C → CAPTCHA
         javafx.application.Platform.runLater(() -> {
             try {
                 Scene scene = dropZone.getScene();
                 if (scene != null) {
-                    // Ajouter le listener sur la scène
                     scene.setOnKeyPressed(event -> {
-                        if (event.getCode() == KeyCode.C) {
-                            System.out.println("C pressé !");
-                            openCaptcha();
-                        }
+                        if (event.getCode() == KeyCode.C) openCaptcha();
                     });
-                    System.out.println("✓ Listener clavier installé sur la scène");
                 }
             } catch (Exception e) {
-                System.err.println("Erreur setup raccourci : " + e.getMessage());
+                System.err.println("Erreur raccourci : " + e.getMessage());
             }
         });
     }
 
-    private void openCaptcha() {
+    // ══════════════════════════════════════════════════════════════════════
+    //  MINI-JEU
+    //  Lance UserInterface.java avec les neurones du singleton AIEngine
+    // ══════════════════════════════════════════════════════════════════════
+
+    @FXML
+    private void handleMiniGame() {
         try {
-            // Vérifier que la scène est prête
-            if (dropZone.getScene() == null) {
-                System.err.println("Scène non disponible !");
+            addLog("🎮 Lancement du mini-jeu...");
+
+            List<String> cheminsTest = CaptchaController.collectAllImages(
+                    "src/main/dataset_groupe_9/test");
+
+            if (cheminsTest.isEmpty()) {
+                addLog("⚠️ Aucune image trouvée pour le mini-jeu.");
                 return;
             }
 
+            iNeurone[] neurones = AIEngine.getInstance().getNeurones();
+
+            UserInterface.start(cheminsTest, neurones);
+
+        } catch (Exception e) {
+            addLog("❌ Erreur mini-jeu : " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    // ══════════════════════════════════════════════════════════════════════
+    //  CAPTCHA
+    // ══════════════════════════════════════════════════════════════════════
+
+    private void openCaptcha() {
+        try {
+            if (dropZone.getScene() == null) return;
+
             FXMLLoader loader = new FXMLLoader(
-                    getClass().getResource("/frontend/captcha.fxml")
-            );
+                    getClass().getResource("/frontend/captcha.fxml"));
             Parent root = loader.load();
 
             Stage captchaStage = new Stage();
@@ -120,35 +178,30 @@ public class Controller {
             Scene scene = new Scene(root);
             scene.setFill(javafx.scene.paint.Color.TRANSPARENT);
             scene.getStylesheets().add(
-                    getClass().getResource("/frontend/style.css").toExternalForm()
-            );
+                    getClass().getResource("/frontend/style.css").toExternalForm());
 
             captchaStage.setScene(scene);
             captchaStage.setAlwaysOnTop(true);
             captchaStage.show();
 
-            // Centrer sur la fenêtre principale
-            captchaStage.setX(mainStage.getX() +
-                    (mainStage.getWidth() - captchaStage.getWidth()) / 2);
-            captchaStage.setY(mainStage.getY() +
-                    (mainStage.getHeight() - captchaStage.getScene().getHeight()) / 2);
+            captchaStage.setX(mainStage.getX()
+                    + (mainStage.getWidth()  - captchaStage.getWidth())  / 2);
+            captchaStage.setY(mainStage.getY()
+                    + (mainStage.getHeight() - captchaStage.getScene().getHeight()) / 2);
 
-            addLog("🔒 CAPTCHA lancé... Prouvez que vous n'êtes pas un robot 😄");
+            addLog("🔒 CAPTCHA ouvert !");
 
         } catch (Exception e) {
-            System.err.println("Erreur ouverture CAPTCHA : " + e.getMessage());
+            addLog("✗ Erreur CAPTCHA : " + e.getMessage());
             e.printStackTrace();
-            addLog("✗ Erreur ouverture CAPTCHA");
         }
     }
 
-    @FXML
-    private void handleOpenCaptcha() {
-        System.out.println("Ouverture du CAPTCHA via bouton...");
-        openCaptcha();
-    }
+    @FXML private void handleOpenCaptcha() { openCaptcha(); }
 
-    // =================== DRAG AND DROP ===================
+    // ══════════════════════════════════════════════════════════════════════
+    //  DRAG AND DROP
+    // ══════════════════════════════════════════════════════════════════════
 
     private void setupDragAndDrop() {
         dropZone.setOnDragOver(event -> {
@@ -179,73 +232,51 @@ public class Controller {
             }
             event.setDropCompleted(success);
             event.consume();
-            dropZone.getStyleClass().remove("drop-zone-active");
         });
 
-        dropZone.setOnMouseClicked(event -> handleBrowseImage());
+        dropZone.setOnMouseClicked(event -> {
+            FileChooser fc = new FileChooser();
+            fc.setTitle("Choisir une image");
+            fc.getExtensionFilters().addAll(
+                    new FileChooser.ExtensionFilter("Images", "*.jpg", "*.jpeg", "*.png", "*.bmp")
+            );
+            File file = fc.showOpenDialog(dropZone.getScene().getWindow());
+            if (file != null) loadImage(file);
+        });
     }
 
-    private boolean isImageFile(File file) {
-        String name = file.getName().toLowerCase();
-        return name.endsWith(".jpg") || name.endsWith(".jpeg") ||
-                name.endsWith(".png") || name.endsWith(".bmp");
-    }
-
-    @FXML
-    private void handleBrowseImage() {
-        FileChooser chooser = new FileChooser();
-        chooser.setTitle("Sélectionner une image");
-        chooser.getExtensionFilters().add(
-                new FileChooser.ExtensionFilter("Images", "*.jpg", "*.jpeg", "*.png", "*.bmp")
-        );
-        File file = chooser.showOpenDialog(dropZone.getScene().getWindow());
-        if (file != null) loadImage(file);
+    private boolean isImageFile(File f) {
+        String name = f.getName().toLowerCase();
+        return name.endsWith(".jpg") || name.endsWith(".jpeg")
+                || name.endsWith(".png") || name.endsWith(".bmp");
     }
 
     private void loadImage(File file) {
-        try {
-            selectedImageFile = file;
-            Image image = new Image(file.toURI().toString());
+        selectedImageFile = file;
 
-            // Afficher l'image
-            previewImage.setImage(image);
-            previewImage.setVisible(true);
-            dropHint.setVisible(false);
-            dropHint.setManaged(false);
+        // Aperçu
+        Image img = new Image(file.toURI().toString());
+        previewImage.setImage(img);
+        previewImage.setVisible(true);
+        dropHint.setVisible(false);
+        dropHint.setManaged(false);
 
-            // Infos image
-            imageNameLabel.setText("📄 " + file.getName());
-            imageSizeLabel.setText("📐 " + (int)image.getWidth() + "×" + (int)image.getHeight());
-            imageWeightLabel.setText("💾 " + (file.length() / 1024) + " Ko");
-            imageInfoBox.setVisible(true);
-            imageInfoBox.setManaged(true);
+        // Infos
+        imageNameLabel.setText(file.getName());
+        imageSizeLabel.setText((int) img.getWidth() + " × " + (int) img.getHeight() + " px");
+        imageWeightLabel.setText(String.format("%.1f Ko", file.length() / 1024.0));
+        imageInfoBox.setVisible(true);
+        imageInfoBox.setManaged(true);
 
-            // Activer boutons
-            analyzeBtn.setDisable(false);
-            clearBtn.setDisable(false);
+        analyzeBtn.setDisable(false);
+        clearBtn.setDisable(false);
 
-            // Réinitialiser résultat
-            resultPanel.setVisible(false);
-            resultPanel.setManaged(false);
-            resultPlaceholder.setVisible(true);
-            resultPlaceholder.setManaged(true);
-
-            // Animation d'apparition de l'image
-            FadeTransition ft = new FadeTransition(Duration.millis(400), previewImage);
-            ft.setFromValue(0);
-            ft.setToValue(1);
-            ft.play();
-
-            addLog("✓ Image chargée : " + file.getName());
-            addLog("  Dimensions : " + (int)image.getWidth() + "×" + (int)image.getHeight() + " px");
-            addLog("  Taille : " + (file.length() / 1024) + " Ko");
-
-        } catch (Exception e) {
-            addLog("✗ Erreur : " + e.getMessage());
-        }
+        addLog("📂 Image chargée : " + file.getName());
     }
 
-    // =================== ANALYSE ===================
+    // ══════════════════════════════════════════════════════════════════════
+    //  ANALYSE
+    // ══════════════════════════════════════════════════════════════════════
 
     @FXML
     private void handleAnalyze() {
@@ -253,113 +284,133 @@ public class Controller {
 
         analyzeBtn.setDisable(true);
         clearBtn.setDisable(true);
-        addLog("━━━━━━━━━━━━━━━━━━━━━━━━━━━");
         addLog("🔍 Analyse en cours...");
 
-        simulateAnalysis();
-    }
-
-    private void simulateAnalysis() {
         new Thread(() -> {
             try {
-                // Étapes de traitement
-                sleep(300);
-                log("  → Conversion niveaux de gris...");
-                sleep(400);
-                log("  → Normalisation [0, 1]...");
-                sleep(400);
-                log("  → Passage dans le neurone...");
-                sleep(600);
-                log("  → Calcul des probabilités...");
-                sleep(300);
+                // Prédiction via AIEngine → NeuroneSigmoide + Hog du back
+                AIEngine.PredictResult result = AIEngine.getInstance().predict(selectedImageFile);
 
-                // Résultat simulé
-                Random rand = new Random();
-                boolean isChat = rand.nextBoolean();
-                double confidence = 0.62 + rand.nextDouble() * 0.35;
-                double catConf = isChat ? confidence : (1 - confidence);
-                double dogConf = isChat ? (1 - confidence) : confidence;
-
-                // Mettre à jour UI
                 javafx.application.Platform.runLater(() -> {
-                    displayResult(isChat, confidence, catConf, dogConf);
+                    displayResult(result);
                     analyzeBtn.setDisable(false);
                     clearBtn.setDisable(false);
                 });
 
-            } catch (InterruptedException e) {
+            } catch (Exception e) {
+                javafx.application.Platform.runLater(() -> {
+                    addLog("✗ Erreur IA : " + e.getMessage());
+                    analyzeBtn.setDisable(false);
+                    clearBtn.setDisable(false);
+                });
                 e.printStackTrace();
             }
         }).start();
     }
 
-    private void displayResult(boolean isChat, double confidence, double catConf, double dogConf) {
-        // Mettre à jour le résultat
-        String emoji = isChat ? "🐱" : "🐶";
-        String animal = isChat ? "CHAT" : "CHIEN";
-        String color = isChat ? "#4a72b8" : "#1a3a8c";
+    private void displayResult(AIEngine.PredictResult result) {
 
-        resultEmoji.setText(emoji);
-        resultLabel.setText(animal);
-        resultLabel.setStyle("-fx-text-fill: " + color + ";");
+        double confidence = result.score;
+        boolean lowConf   = confidence < SEUIL_CONFIANCE;
 
-        // Animation des barres
+        if (lowConf) {
+            resultEmoji.setText("❓");
+            resultLabel.setText("INDÉTERMINÉ");
+            resultLabel.setStyle("-fx-text-fill: " + COLOR_INCONNU + ";");
+        } else {
+            resultEmoji.setText(result.emoji);
+            resultLabel.setText(result.label.toUpperCase());
+            String color = switch (result.type) {
+                case 0  -> COLOR_CHAT;
+                case 1  -> COLOR_CHIEN;
+                case 2  -> COLOR_WILD;
+                default -> COLOR_INCONNU;
+            };
+            resultLabel.setStyle("-fx-text-fill: " + color + ";");
+        }
+
+        lowConfidenceLabel.setVisible(lowConf);
+        lowConfidenceLabel.setManaged(lowConf);
+
         animateBar(confidenceBar, confidence);
-        animateBar(catBar, catConf);
-        animateBar(dogBar, dogConf);
-
         confidencePercent.setText(String.format("%.1f%%", confidence * 100));
-        catPercent.setText(String.format("%.1f%%", catConf * 100));
-        dogPercent.setText(String.format("%.1f%%", dogConf * 100));
 
-        // Afficher le panel résultat avec animation
+        double catScore  = result.scores.length > 0 ? result.scores[0] : 0;
+        double dogScore  = result.scores.length > 1 ? result.scores[1] : 0;
+        double wildScore = result.scores.length > 2 ? result.scores[2] : 0;
+
+        animateBar(catBar,  catScore);
+        animateBar(dogBar,  dogScore);
+        animateBar(wildBar, wildScore);
+
+        catPercent.setText(String.format("%.1f%%",  catScore  * 100));
+        dogPercent.setText(String.format("%.1f%%",  dogScore  * 100));
+        wildPercent.setText(String.format("%.1f%%", wildScore * 100));
+
+        highlightWinner(result.type, lowConf);
+
         resultPlaceholder.setVisible(false);
         resultPlaceholder.setManaged(false);
         resultPanel.setVisible(true);
         resultPanel.setManaged(true);
 
         FadeTransition ft = new FadeTransition(Duration.millis(500), resultPanel);
-        ft.setFromValue(0);
-        ft.setToValue(1);
-
+        ft.setFromValue(0); ft.setToValue(1);
         ScaleTransition st = new ScaleTransition(Duration.millis(500), resultPanel);
-        st.setFromX(0.8);
-        st.setFromY(0.8);
-        st.setToX(1.0);
-        st.setToY(1.0);
-
+        st.setFromX(0.85); st.setFromY(0.85);
+        st.setToX(1.0);    st.setToY(1.0);
         new ParallelTransition(ft, st).play();
 
-        // Mettre à jour les stats session
         sessionTotal++;
         sessionConfidenceSum += confidence;
-        if (isChat) sessionChats++;
-        else sessionChiens++;
-
+        if (!lowConf) {
+            switch (result.type) {
+                case 0 -> sessionChats++;
+                case 1 -> sessionChiens++;
+                case 2 -> sessionWild++;
+            }
+        }
         totalAnalyses.setText(String.valueOf(sessionTotal));
         totalChats.setText(String.valueOf(sessionChats));
         totalChiens.setText(String.valueOf(sessionChiens));
-        avgConfidence.setText(String.format("%.0f%%", (sessionConfidenceSum / sessionTotal) * 100));
+        totalWild.setText(String.valueOf(sessionWild));
+        avgConfidence.setText(String.format("%.0f%%",
+                (sessionConfidenceSum / sessionTotal) * 100));
 
-        // Log résultat
         addLog("━━━━━━━━━━━━━━━━━━━━━━━━━━━");
-        addLog("✅ Résultat : " + emoji + " " + animal);
-        addLog("   Confiance : " + String.format("%.1f%%", confidence * 100));
-        addLog("   Chat : " + String.format("%.1f%%", catConf * 100));
-        addLog("   Chien : " + String.format("%.1f%%", dogConf * 100));
+        if (lowConf) {
+            addLog("⚠️  INDÉTERMINÉ — confiance trop faible");
+        } else {
+            addLog("✅ " + result.emoji + " " + result.label.toUpperCase());
+        }
+        addLog(String.format("   🐱 Chat  : %.1f%%", catScore  * 100));
+        addLog(String.format("   🐶 Chien : %.1f%%", dogScore  * 100));
+        addLog(String.format("   🦁 Wild  : %.1f%%", wildScore * 100));
+        addLog(String.format("   Confiance : %.1f%%", confidence * 100));
+        if (lowConf) addLog("   (Seuil : " + (int)(SEUIL_CONFIANCE * 100) + "%)");
+    }
+
+    private void highlightWinner(int winnerType, boolean lowConf) {
+        catBar.setStyle("-fx-accent: #b0c4ff;");
+        dogBar.setStyle("-fx-accent: #b0c4ff;");
+        wildBar.setStyle("-fx-accent: #d4c4a8;");
+        if (lowConf) return;
+        switch (winnerType) {
+            case 0 -> catBar.setStyle("-fx-accent: linear-gradient(to right, #4a72b8, #6895fd);");
+            case 1 -> dogBar.setStyle("-fx-accent: linear-gradient(to right, #1a3a8c, #4a72b8);");
+            case 2 -> wildBar.setStyle("-fx-accent: linear-gradient(to right, #7c5c2e, #c4a265);");
+        }
     }
 
     private void animateBar(ProgressBar bar, double target) {
-        Timeline timeline = new Timeline();
-        double current = bar.getProgress();
-        timeline.getKeyFrames().add(
-                new KeyFrame(Duration.millis(600),
-                        new KeyValue(bar.progressProperty(), target, Interpolator.EASE_BOTH))
-        );
-        timeline.play();
+        Timeline tl = new Timeline(new KeyFrame(Duration.millis(600),
+                new KeyValue(bar.progressProperty(), target, Interpolator.EASE_BOTH)));
+        tl.play();
     }
 
-    // =================== ACTIONS ===================
+    // ══════════════════════════════════════════════════════════════════════
+    //  ACTIONS
+    // ══════════════════════════════════════════════════════════════════════
 
     @FXML
     private void handleClear() {
@@ -368,32 +419,35 @@ public class Controller {
         previewImage.setVisible(false);
         dropHint.setVisible(true);
         dropHint.setManaged(true);
-
         imageInfoBox.setVisible(false);
         imageInfoBox.setManaged(false);
-
         resultPanel.setVisible(false);
         resultPanel.setManaged(false);
         resultPlaceholder.setVisible(true);
         resultPlaceholder.setManaged(true);
-
         analyzeBtn.setDisable(true);
         clearBtn.setDisable(true);
 
-        addLog("🗑 Image effacée - Prêt");
+        resetBar(confidenceBar, confidencePercent);
+        resetBar(catBar,  catPercent);
+        resetBar(dogBar,  dogPercent);
+        resetBar(wildBar, wildPercent);
+
+        addLog("🗑 Effacé — Prêt");
     }
 
-    @FXML
-    private void handleClearLog() {
-        logArea.clear();
+    private void resetBar(ProgressBar bar, Label label) {
+        bar.setProgress(0);
+        bar.setStyle("");
+        label.setText("0%");
     }
 
-    @FXML
-    private void handleBack() {
-        MainApp.showWelcomePage();
-    }
+    @FXML private void handleClearLog() { logArea.clear(); }
+    @FXML private void handleBack()     { MainApp.showWelcomePage(); }
 
-    // =================== UI ===================
+    // ══════════════════════════════════════════════════════════════════════
+    //  UI
+    // ══════════════════════════════════════════════════════════════════════
 
     private void resetUI() {
         analyzeBtn.setDisable(true);
@@ -404,7 +458,6 @@ public class Controller {
         imageInfoBox.setManaged(false);
     }
 
-    // Animation de secousse pour erreur
     private void shakeNode(javafx.scene.Node node) {
         TranslateTransition shake = new TranslateTransition(Duration.millis(60), node);
         shake.setFromX(0);
@@ -414,22 +467,10 @@ public class Controller {
         shake.play();
     }
 
-    // =================== UTILS ===================
-
     private void addLog(String message) {
-        String time = java.time.LocalTime.now().format(
-                java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss"));
+        String time = java.time.LocalTime.now()
+                .format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss"));
         javafx.application.Platform.runLater(() ->
-                logArea.appendText("[" + time + "] " + message + "\n")
-        );
-    }
-
-    private void log(String message) {
-        javafx.application.Platform.runLater(() -> addLog(message));
-    }
-
-    private void sleep(int ms) throws InterruptedException {
-        Thread.sleep(ms);
+                logArea.appendText("[" + time + "] " + message + "\n"));
     }
 }
-
