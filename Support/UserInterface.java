@@ -8,14 +8,17 @@ public class UserInterface extends JFrame {
     private JLabel labelVerdict;
     private JButton boutonSuivant;
 
-    private List<String> listeChemins;
-    private iNeurone[] neurones;
-    private Random rand;
+    private final List<String> listeChemins;
+    private final iNeurone[] neurones;
+    private final float[] moyenne;
+    private final float[] ecart;
+    private final Random rand = new Random();
 
-    public UserInterface(List<String> chemins, iNeurone[] neurones) {
+    public UserInterface(List<String> chemins, iNeurone[] neurones, float[] moyenne, float[] ecart) {
         this.listeChemins = chemins;
         this.neurones = neurones;
-        this.rand = new Random();
+        this.moyenne = moyenne;
+        this.ecart = ecart;
 
         setTitle("Détecteur Chat / Chien / Wild - ISEN Groupe 9");
         setSize(450, 550);
@@ -44,38 +47,35 @@ public class UserInterface extends JFrame {
     private void afficherNouvelleImage() {
         if (listeChemins == null || listeChemins.isEmpty()) return;
 
-        // Choix aléatoire d'une image de test
-        String cheminAleatoire = listeChemins.get(rand.nextInt(listeChemins.size()));
+        String chemin = listeChemins.get(rand.nextInt(listeChemins.size()));
 
-        // Affichage de l'image redimensionnée
-        ImageIcon icone = new ImageIcon(cheminAleatoire);
-        java.awt.Image imgRedimensionnee = icone.getImage().getScaledInstance(350, 350, java.awt.Image.SCALE_SMOOTH);
-        labelImage.setIcon(new ImageIcon(imgRedimensionnee));
+        ImageIcon icone = new ImageIcon(chemin);
+        java.awt.Image imgRedim = icone.getImage().getScaledInstance(350, 350, java.awt.Image.SCALE_SMOOTH);
+        labelImage.setIcon(new ImageIcon(imgRedim));
 
-        // Détermination de la vraie classe pour vérification visuelle humaine
-        int typeReel = ChaineTraitImage.typeReel(cheminAleatoire);
+        int typeReel = ChaineTraitImage.typeReel(chemin);
         String reelTexte = ChaineTraitImage.TYPE[typeReel];
 
-        // Traitement du signal : classe predite = argmax des 3 neurones (memes
-        // caracteristiques HOG qu'a l'apprentissage)
-        Image imageJava = new Image(cheminAleatoire, typeReel, ChaineTraitImage.NIVEAUX_DE_GRIS);
-        float[] entrees = ChaineTraitImage.caracteristiques(imageJava);
+        // Meme pipeline qu'a l'apprentissage : image COULEUR -> features -> standardisation
+        Image im = new Image(chemin, typeReel, false);
+        if (im.donnees() == null) { labelVerdict.setText("Image illisible"); return; }
+        float[] f = ChaineTraitImage.caracteristiques(im);
+        for (int j = 0; j < f.length; j++) f[j] = (f[j] - moyenne[j]) / ecart[j];
 
-        int predit = ChaineTraitImage.predictionType(neurones, entrees);
-        neurones[predit].metAJour(entrees); // recupere le score du neurone gagnant
+        int predit = ChaineTraitImage.predictionType(neurones, f);
+        neurones[predit].metAJour(f);
         float score = neurones[predit].sortie();
         String preditTexte = ChaineTraitImage.TYPE[predit];
 
-        // vert = juste, rouge = faux
         boolean correct = (predit == typeReel);
         labelVerdict.setText(preditTexte.toUpperCase()
             + " (score " + String.format("%.2f", score) + " | reel: " + reelTexte + ")");
         labelVerdict.setForeground(correct ? new Color(34, 139, 34) : Color.RED);
     }
 
-    public static void start(List<String> cheminsTest, iNeurone[] neurones) {
+    public static void start(List<String> cheminsTest, iNeurone[] neurones, float[] moyenne, float[] ecart) {
         SwingUtilities.invokeLater(() -> {
-            UserInterface app = new UserInterface(cheminsTest, neurones);
+            UserInterface app = new UserInterface(cheminsTest, neurones, moyenne, ecart);
             app.setVisible(true);
         });
     }
