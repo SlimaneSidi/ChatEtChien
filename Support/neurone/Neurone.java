@@ -93,6 +93,31 @@ public abstract class Neurone implements iNeurone
 		return iter;
 	}
 
+	// Apprentissage sur un nombre d'itérations (époques) fixé à l'avance.
+	// On effectue exactement nbIterations passages sur le jeu d'entraînement,
+	// peu importe la mse atteinte : c'est l'appelant qui maîtrise la durée
+	// de l'apprentissage. Renvoie nbIterations.
+	public int apprentissage(final float[][] entrees, final float[] resultats, final int nbIterations)
+	{
+		for (int iter = 0; iter < nbIterations; ++iter)
+		{
+			double mse = 0.;
+			for (int i = 0; i < entrees.length; ++i)
+			{
+				final float[] entree = entrees[i];
+				metAJour(entree);
+				final float delta = resultats[i] - sortie();
+				mse += delta * delta;
+				for (int j = 0; j < entree.length; ++j)
+					synapses()[j] += entree[j]*eta*delta;
+				fixeBiais(biais()+eta*delta);
+			}
+			mse /= entrees.length;
+			System.out.printf("Itération %d, mse:  %.6f\n", iter, mse);
+		}
+		return nbIterations;
+	}
+
 	public void sauvegarde(String chemin) // optionel
 	{
 		try

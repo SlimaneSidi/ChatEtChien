@@ -10,6 +10,9 @@ public interface iNeurone
 	// Fonction d'apprentissage relative à la mse ; renvoie le nombre d'itérations effectuées
 	public int apprentissage(final float[][] entrees, final float[] resultats, final float MSElimite);
 
+	// Apprentissage sur un nombre d'itérations fixé ; renvoie ce même nombre
+	public int apprentissage(final float[][] entrees, final float[] resultats, final int nbIterations);
+
 	public void sauvegarde(String chemin); // optionel
 	public void chargement(String chemin); // optionel
 }

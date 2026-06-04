@@ -15,9 +15,10 @@ public class ChaineTraitImage
     static final boolean NIVEAUX_DE_GRIS = true;
     static final String DIR_TRAIN = "../dataset_groupe_9/train";
     static final String DIR_TEST  = "../dataset_groupe_9/test";
-    static final float ETA        = 0.001f;
-    static final float MSE_LIMITE = 0.05f;
-    static final long  SEED       = 6767L;
+    static final float ETA            = 0.001f;
+    // Nombre d'itérations (époques) d'apprentissage, appliqué identiquement aux 3 neurones.
+    static final int   NB_ITERATIONS  = 500;
+    static final long  SEED           = 676767L;
     static final String DIR_MODELE = "../modeles";     // dossier des sauvegardes
     static final boolean FORCER_ENTRAINEMENT = true;
     static final String[] TYPE = {"chat", "chien", "wild"};
@@ -138,13 +139,13 @@ public class ChaineTraitImage
             for (int k = 0; k < NB_TYPE; ++k)
                 neurones[k] = new NeuroneSigmoide(tailleEntree);
 
-            // Apprentissage
-            System.out.printf("[3/4] Apprentissage (eta=%.4f, MSElimite=%.3f)...%n",
-                              ETA, MSE_LIMITE);
+            // Apprentissage : nombre d'iterations fixe, identique pour les 3 neurones
+            System.out.printf("[3/4] Apprentissage (eta=%.4f, nb_iterations=%d)...%n",
+                              ETA, NB_ITERATIONS);
             long tA = System.currentTimeMillis();
             for (int k = 0; k < NB_TYPE; ++k) {
                 System.out.printf("   Neurone %s%n", TYPE[k]);
-                totalIterations += neurones[k].apprentissage(entreesTrain, ciblesTrain[k], MSE_LIMITE);
+                totalIterations += neurones[k].apprentissage(entreesTrain, ciblesTrain[k], NB_ITERATIONS);
             }
             long dtA = System.currentTimeMillis() - tA;
             System.out.printf("    Apprentissage termine en %.1f s (%d iterations cumulees)%n",
@@ -221,7 +222,7 @@ public class ChaineTraitImage
         // print des resultats dans Results.md
         String type = "HOG Miroir";
         String neurone = "NeuroneSigmoide x" + NB_TYPE;
-        enregistreResultats(type, neurone, nbImagesTrain, totalIterations, ETA, MSE_LIMITE,
+        enregistreResultats(type, neurone, nbImagesTrain, totalIterations, ETA,
                             moyenne, precision, catched);
 
         // UI
@@ -229,13 +230,13 @@ public class ChaineTraitImage
     }
 
     static void enregistreResultats(String type, String neurone, int nbImagesTrain,
-                                    int iterations, float eta, float mseLimite,
+                                    int iterations, float eta,
                                     double moyenne, double precision, double catched) {
         final String chemin = "../Rapport/Results.md";
         final String entete =
             "# Resultats des executions\n\n" +
-            "| id | date | type | neurone | images_train | iterations | eta | mse_limite | moyenne (%) | precision (%) | catched (%) |\n" +
-            "|----|------|------|---------|--------------|------------|-----|------------|--------------|---------------|------------|\n";
+            "| id | date | type | neurone | images_train | iterations | eta | moyenne (%) | precision (%) | catched (%) |\n" +
+            "|----|------|------|---------|--------------|------------|-----|--------------|---------------|------------|\n";
         try {
             java.io.File f = new java.io.File(chemin);
             int prochainId = 1;
@@ -261,9 +262,9 @@ public class ChaineTraitImage
                 String date = java.time.LocalDateTime.now()
                     .format(java.time.format.DateTimeFormatter.ofPattern("HH:mm:ss dd-MM"));
                 w.write(String.format(java.util.Locale.US,
-                    "| %d | %s | %s | %s | %d | %d | %.4f | %.3f | %.2f | %.2f | %.2f |%n",
+                    "| %d | %s | %s | %s | %d | %d | %.4f | %.2f | %.2f | %.2f |%n",
                     prochainId, date, type, neurone, nbImagesTrain, iterations,
-                    eta, mseLimite, moyenne, precision, catched));
+                    eta, moyenne, precision, catched));
             }
             System.out.printf("Resultats ajoutes a %s (id=%d)%n", chemin, prochainId);
         } catch (java.io.IOException e) {
