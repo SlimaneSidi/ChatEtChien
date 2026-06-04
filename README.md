@@ -1,4 +1,4 @@
-# ChatChienWild — Réseau de Neurones en Java
+# Chat_ET_Chien — Réseau de Neurones en Java
 
 ---
 
@@ -9,7 +9,7 @@
   <img src="https://img.shields.io/badge/Version-1.0.0-blue?style=for-the-badge" alt="Version">
 </p>
 
-## 📋 Présentation Générale
+## Présentation Générale
 
 **ChatEtChien** est un projet transversal combinant **Intelligence Artificielle, Java et Traitement du Signal (THS)**, réalisé dans le cadre du cycle ingénieur à l'**ISEN Méditerranée**.
 
@@ -19,7 +19,7 @@ Ce dépôt comprend notre implémentation qui permet de classifier et différenc
 
 ---
 
-## 👥 Équipe Projet — Groupe 9
+## Équipe Projet — Groupe 9
 
 Une collaboration menée par :
 * **Icham OULALI**
@@ -30,7 +30,7 @@ Une collaboration menée par :
 
 ---
 
-## 🛠️ Fonctionnalités & Concepts Clés
+## Fonctionnalités & Concepts Clés
 
 Le projet s'articule autour de quatre grands axes techniques et scientifiques :
 
@@ -47,23 +47,23 @@ Le projet s'articule autour de quatre grands axes techniques et scientifiques :
 
 ### 3. Fonctions d'Activation & Mathématiques
 Étude comparative de la convergence et des performances à travers plusieurs fonctions mathématiques d'activation implémentées :
-* 🛑 **Heaviside (Seuil)** (`NeuroneHeavyside.java`) : Approche logique et binaire classique.
-* 📈 **Sigmoïde** (`NeuroneSigmoide.java`) : Modélisation continue, non linéaire et différentiable, idéale pour l'analyse des probabilités de classe.
-* ⚡ **ReLU (Rectified Linear Unit)** (`NeuroneReLU.java`) : Optimisation de l'apprentissage profond en évitant le phénomène de disparition du gradient.
+- **Heaviside (Seuil)** (`NeuroneHeavyside.java`) : Approche logique et binaire classique.
+- **Sigmoïde** (`NeuroneSigmoide.java`) : Modélisation continue, non linéaire et différentiable, idéale pour l'analyse des probabilités de classe.
+- **ReLU (Rectified Linear Unit)** (`NeuroneReLU.java`) : Optimisation de l'apprentissage profond en évitant le phénomène de disparition du gradient.
 
 ### 4. Algorithme d'Apprentissage & Analyse Scientifique
 * Implémentation complète de la **descente de gradient** rétroactive via un apprentissage supervisé.
 * Calcul de l'**Erreur Quadratique Moyenne (MSE)** à chaque époque pour monitorer précisément la courbe d'apprentissage.
 * **Étude de robustesse** : Évaluation approfondie du comportement et de la tolérance de l'algorithme.
 
-### 🌟 Bonus & Extensions Implémentées
+### Bonus & Extensions Implémentées
 * **Interface Graphique Utilisateur (GUI) :** Développement d'une interface interactive en Java Swing (`UserInterface.java`) permettant la classification visuelle en temps réel des images.
 * **Extraction de caractéristiques (HOG) :** Utilisation d'algorithmes de détection (`HOG.java`) pour optimiser l'identification des formes.
 * **Classification multi-classes :** Extension de l'apprentissage pour inclure une troisième catégorie : les animaux sauvages (`wild`).
 
 ---
 
-## 📂 Structure du Dépôt
+## Structure du Dépôt
 
 L'arborescence du projet est structurée de manière claire pour isoler le code source, les données d'entraînement et les livrables d'analyse :
 
@@ -96,7 +96,7 @@ L'arborescence du projet est structurée de manière claire pour isoler le code 
 
 ---
 
-## 🚀 Exécution et Compilation
+## Exécution et Compilation
 
 Pour compiler et exécuter le projet, placez-vous d'abord dans le dossier `Support` contenant les sources :
 
@@ -118,7 +118,7 @@ java -cp .:neurone ChaineTraitImage
 
 ---
 
-## 📊 Méthodologie & Analyses
+## Méthodologie & Analyses
 
 Le projet s'accompagne d'une démarche scientifique rigoureuse documentée dans le dossier `Rapport/`, étudiant notamment :
 1. **L'impact du taux d'apprentissage** sur la stabilité et la vitesse de convergence du modèle.
