@@ -67,8 +67,8 @@ public abstract class Neurone implements iNeurone
 		etatInterne = activation(somme);
 	}
 	
-	// Fonction d'apprentissage relative à la mse
-	public void apprentissage(final float[][] entrees, final float[] resultats, final float MSElimite)
+	// Fonction d'apprentissage relative à la mse ; renvoie le nombre d'itérations effectuées
+	public int apprentissage(final float[][] entrees, final float[] resultats, final float MSElimite)
 	{
 		double mse = 0.;
 		int iter = 0;
@@ -90,6 +90,32 @@ public abstract class Neurone implements iNeurone
 			iter += 1;
 		}
 		while (mse > MSElimite);
+		return iter;
+	}
+
+	// Apprentissage sur un nombre d'itérations (époques) fixé à l'avance.
+	// On effectue exactement nbIterations passages sur le jeu d'entraînement,
+	// peu importe la mse atteinte : c'est l'appelant qui maîtrise la durée
+	// de l'apprentissage. Renvoie nbIterations.
+	public int apprentissage(final float[][] entrees, final float[] resultats, final int nbIterations)
+	{
+		for (int iter = 0; iter < nbIterations; ++iter)
+		{
+			double mse = 0.;
+			for (int i = 0; i < entrees.length; ++i)
+			{
+				final float[] entree = entrees[i];
+				metAJour(entree);
+				final float delta = resultats[i] - sortie();
+				mse += delta * delta;
+				for (int j = 0; j < entree.length; ++j)
+					synapses()[j] += entree[j]*eta*delta;
+				fixeBiais(biais()+eta*delta);
+			}
+			mse /= entrees.length;
+			System.out.printf("Itération %d, mse:  %.6f\n", iter, mse);
+		}
+		return nbIterations;
 	}
 
 	public void sauvegarde(String chemin) // optionel
