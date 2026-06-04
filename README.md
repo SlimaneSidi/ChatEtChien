@@ -1,4 +1,4 @@
-# Chat_ET_Chien — Réseau de Neurones en Java
+# ChatETChien — Réseau de Neurones en Java
 
 ---
 
