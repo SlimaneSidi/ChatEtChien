@@ -11,12 +11,10 @@ import java.util.*;
 
 public class ChaineTraitImage
 {
-    // HOG travaille sur le gradient : on lit les images en niveaux de gris.
     static final boolean NIVEAUX_DE_GRIS = true;
     static final String DIR_TRAIN = "../dataset_groupe_9/train";
     static final String DIR_TEST  = "../dataset_groupe_9/test";
     static final float ETA            = 0.001f;
-    // Nombre d'itérations (époques) d'apprentissage, appliqué identiquement aux 3 neurones.
     static final int   NB_ITERATIONS  = 500;
     static final long  SEED           = 676767L;
     static final String DIR_MODELE = "../modeles";     // dossier des sauvegardes
