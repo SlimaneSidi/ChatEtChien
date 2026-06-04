@@ -1,4 +1,4 @@
-# 🐱🐶 ChatEtChien — Réseau de Neurones From Scratch en Java
+# ChatChienWild — Réseau de Neurones en Java
 
 ---
 
@@ -11,17 +11,17 @@
 
 ## 📋 Présentation Générale
 
-**ChatEtChien** est un projet transversal combinant **Intelligence Artificielle, Programmation Orientée Objet (Java) et Traitement du Signal (THS)**, réalisé dans le cadre du cycle ingénieur à l'**ISEN Méditerranée**.
+**ChatEtChien** est un projet transversal combinant **Intelligence Artificielle, Java et Traitement du Signal (THS)**, réalisé dans le cadre du cycle ingénieur à l'**ISEN Méditerranée**.
 
-L'objectif principal de ce projet est de concevoir, implémenter et entraîner un **réseau de neurones artificiels (perceptron) entièrement *from scratch***, c'est-à-dire sans recours à des bibliothèques de Machine Learning externes (telles que TensorFlow, PyTorch ou Weka). 
+L'objectif principal de ce projet est de concevoir, implémenter et entraîner un **réseau de neurones artificiels (perceptron) entièrement. 
 
-Ce dépôt comprend notre implémentation qui permet de classifier et différencier de manière autonome des images de **chats**, de **chiens**, mais également — dans le cadre de nos extensions de recherche — d'**animaux sauvages (wild)**.
+Ce dépôt comprend notre implémentation qui permet de classifier et différencier de manière autonome des images de **chats**, de **chiens**, mais également dans le cadre de nos extensions de recherche d'**animaux sauvages (wild)**.
 
 ---
 
 ## 👥 Équipe Projet — Groupe 9
 
-Une collaboration menée de front par :
+Une collaboration menée par :
 * **Icham OULALI**
 * **Robin NULLANS**
 * **Guillaume BEDMAR**
@@ -37,7 +37,7 @@ Le projet s'articule autour de quatre grands axes techniques et scientifiques :
 ### 1. Traitement du Signal & Prétraitement d'Images
 * **Lecture des flux d'images** brutes au format matriciel via la classe `Image.java`.
 * **Conversion en niveaux de gris** pour s'affranchir de la complexité des canaux RVB superflus et se focaliser sur l'intensité lumineuse.
-* **Mise à plat (*Flattening*)** : Transformation d'une image bidimensionnelle en un vecteur de caractéristiques unidimensionnel (1D) exploitable par la couche d'entrée.
+* **Mise à plat** : Transformation d'une image bidimensionnelle en un vecteur de caractéristiques unidimensionnel (1D) exploitable par la couche d'entrée.
 * **Normalisation des amplitudes** : Ajustement des valeurs des pixels dans un intervalle optimisé afin d'éviter la saturation des fonctions d'activation et de stabiliser le calcul du gradient.
 
 ### 2. Architecture Neuronale & Programmation Orientée Objet
@@ -55,7 +55,6 @@ Le projet s'articule autour de quatre grands axes techniques et scientifiques :
 * Implémentation complète de la **descente de gradient** rétroactive via un apprentissage supervisé.
 * Calcul de l'**Erreur Quadratique Moyenne (MSE)** à chaque époque pour monitorer précisément la courbe d'apprentissage.
 * **Étude de robustesse** : Évaluation approfondie du comportement et de la tolérance de l'algorithme.
-* Génération automatisée de graphiques de résultats via un script Python (`generer_figures.py`).
 
 ### 🌟 Bonus & Extensions Implémentées
 * **Interface Graphique Utilisateur (GUI) :** Développement d'une interface interactive en Java Swing (`UserInterface.java`) permettant la classification visuelle en temps réel des images.
@@ -111,25 +110,18 @@ Compilez l'ensemble des packages et des classes Java nécessaires à la chaîne 
 javac neurone/*.java *.java
 ```
 
-**2. Lancement de la routine d'entraînement ou de l'interface :**
-
-Si vous souhaitez lancer l'interface graphique de détection :
-```bash
-java -cp .:neurone UserInterface
-```
-
-Si vous souhaitez exécuter la chaîne d'apprentissage classique :
+**2. Lancement :**
 ```bash
 java -cp .:neurone ChaineTraitImage
 ```
-*(Note pour les utilisateurs Windows : remplacez le deux-points par un point-virgule pour le classpath : `java -cp .;neurone ChaineTraitImage`)*
+*(Note pour Windows : remplacez le deux-points par un point-virgule pour le classpath : `java -cp .;neurone ChaineTraitImage`)*
 
 ---
 
 ## 📊 Méthodologie & Analyses
 
 Le projet s'accompagne d'une démarche scientifique rigoureuse documentée dans le dossier `Rapport/`, étudiant notamment :
-1. **L'impact du taux d'apprentissage (*Learning Rate*)** sur la stabilité et la vitesse de convergence du modèle.
+1. **L'impact du taux d'apprentissage** sur la stabilité et la vitesse de convergence du modèle.
 2. **L'analyse comparative des fonctions d'activation** (Heaviside vs Sigmoïde vs ReLU) pour identifier le compromis optimal entre coût de calcul et précision.
 3. **L'efficacité des algorithmes HOG** pour la différenciation complexe entre animaux domestiques (chiens/chats) et sauvages.- **ReLU (Rectified Linear Unit)** : Optimisation de l'apprentissage profond en évitant le phénomène de disparition du gradient.
 
